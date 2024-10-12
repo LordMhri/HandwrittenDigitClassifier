@@ -1,0 +1,32 @@
+# Compiler
+CC = gcc
+
+# Compiler flags
+CFLAGS = -I./include -Wall -Wextra -std=c11
+
+# Source files
+SRCS = main.c data_loader.c
+
+# Object files
+OBJS = $(SRCS:.c=.o)
+
+# Executable name
+EXEC = main.bin
+
+# Default target
+all: $(EXEC)
+
+# Link object files to create the executable
+$(EXEC): $(OBJS)
+	$(CC) $(OBJS) -o $(EXEC)
+
+# Compile source files into object files
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean up build files
+clean:
+	rm -f $(OBJS) $(EXEC)
+
+# Phony targets
+.PHONY: all clean
