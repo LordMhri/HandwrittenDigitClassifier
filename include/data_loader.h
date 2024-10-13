@@ -14,7 +14,11 @@ typedef struct idx_header
 } idx_header ;
 
 //load an idx file and return a 2D array of ubyte elements
-uint8_t **load_data_file(const char *filename,uint32_t *num_items,uint32_t *num_dims,uint32_t *dim_sizes);
+double **load_image_file(const char *filename,uint32_t *num_items,uint32_t *num_dims,uint32_t *dim_sizes);
+
+uint8_t *load_text_file(const char *filename,uint32_t *num_labels);
+
+void one_hot_encode(uint8_t label, double *target); 
 
 //convert high endian to low endian and vice versa
 uint32_t reverse_endian(uint32_t value);

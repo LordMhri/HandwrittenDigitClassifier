@@ -48,28 +48,26 @@ void network_free(Network *net){
     free(net->outputNeuron);    
 }
 
-void *network_predict(Network *net,double *inputs) {
-    for (int i = 0; i < net->neurons_hidden; i++)
-    {
+void *network_predict(Network *net, double *inputs) {
+    // Forward pass to hidden layer
+    for (int i = 0; i < net->neurons_hidden; i++) {
         double sum = 0.0;
-        for (int j = 0; j < net->neurons_input; j++)
-        {
-            sum += inputs[j] * net->weights_hidden[j*net->neurons_hidden + i];
+        for (int j = 0; j < net->neurons_input; j++) {
+            sum += inputs[j] * net->weights_hidden[j * net->neurons_hidden + i];
         }
-        net->hiddenNeuron[i] = ReLU(sum+net->bias_hidden[i]);
+        net->hiddenNeuron[i] = ReLU(sum + net->bias_hidden[i]);
     }
 
-    for (int i = 0; i < net->neurons_output; i++)
-    {
+    // Forward pass to output layer
+    for (int i = 0; i < net->neurons_output; i++) {
         double sum = 0.0;
-        for (int j = 0; j < net->neurons_hidden; i++)
-        {
-            sum += inputs[j] * net->weights_output[j*net->neurons_output + i];
+        for (int j = 0; j < net->neurons_hidden; j++) {  // Use hidden layer output here
+            sum += net->hiddenNeuron[j] * net->weights_output[j * net->neurons_output + i];
         }
         net->outputNeuron[i] = ReLU(sum + net->bias_output[i]);
     }
-    
 }
+
 
 Trainer *trainer_init(Trainer *trainer,Network* net){
     trainer->grad_hidden = calloc(net->neurons_hidden,sizeof(*trainer->grad_hidden));

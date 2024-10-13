@@ -18,7 +18,7 @@ typedef struct Network
 
 } Network;
 
-Network* network_init(Network* net,int neurons_input,int neurons_output,int neurons_hidden);
+Network* network_init(Network* net,int neurons_input,int neurons_hidden,int neurons_output);
 void network_free(Network *net);
 void *network_predict(Network *net,double *inputs);
 
