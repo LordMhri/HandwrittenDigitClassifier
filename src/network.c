@@ -69,5 +69,59 @@ void *network_predict(Network *net,double *inputs) {
         net->outputNeuron[i] = ReLU(sum + net->bias_output[i]);
     }
     
+}
+
+Trainer *trainer_init(Trainer *trainer,Network* net){
+    trainer->grad_hidden = calloc(net->neurons_hidden,sizeof(*trainer->grad_hidden));
+    trainer->grad_output = calloc(net->neurons_output,sizeof(*trainer->grad_output));
+    return trainer;
+}
+
+void trainer_train(Trainer* trainer, Network* net, double* input, double* output, double learningRate){
+    network_predict(net,input);
+    for (int i = 0; i < net->neurons_output; i++)
+    {
+        trainer->grad_output[i] = (net->outputNeuron[i] - output[i]) * ReLU_prime(net->outputNeuron[i]);  
+    }
     
+
+    for (int i = 0; i < net->neurons_hidden; i++)
+    {
+        double sum = 0.0;
+        for (int j = 0; j < net->neurons_output; j++)
+        {
+            sum += trainer->grad_output[j] * net->weights_output[ i *net->neurons_output+ j] ;
+        }
+        trainer->grad_hidden[i] = sum * ReLU_prime(net->hiddenNeuron[i]);
+    }
+
+    for (int i = 0; i < net->neurons_hidden; i++)
+    {
+        for(int j = 0; j < net->neurons_output;j++) {
+            net->weights_output[i*net->neurons_output + j] -= learningRate * trainer->grad_output[j] * net->hiddenNeuron[i];
+        }
+    }
+    
+
+    for (int i = 0; i < net->neurons_input; i++) {
+        for (int j = 0; j < net->neurons_hidden; j++) {
+            net->weights_hidden[i * net->neurons_hidden + j] -= learningRate * trainer->grad_hidden[j] * input[i];
+        }
+    }
+
+    for (int i = 0; i < net->neurons_output; i++) {
+        net->bias_output[i] -= learningRate * trainer->grad_output[i];
+    }
+
+    for (int i = 0; i < net->neurons_hidden; i++) {
+        net->bias_hidden[i] -= learningRate * trainer->grad_hidden[i];
+    }
+    
+    
+}
+
+
+void trainer_free(Trainer* trainer) {
+    free(trainer->grad_hidden);
+    free(trainer->grad_output);
 }
