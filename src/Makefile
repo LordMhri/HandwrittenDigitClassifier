@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -I./include -Wall -Wextra -std=c11
 
 # Source files
-SRCS = main.c data_loader.c
+SRCS = main.c data_loader.c network.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
