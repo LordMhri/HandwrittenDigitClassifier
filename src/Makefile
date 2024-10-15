@@ -18,7 +18,7 @@ all: $(EXEC)
 
 # Link object files to create the executable
 $(EXEC): $(OBJS)
-	$(CC) $(OBJS) -o $(EXEC)
+	$(CC) $(OBJS) -o $(EXEC) -lm
 
 # Compile source files into object files
 %.o: %.c
