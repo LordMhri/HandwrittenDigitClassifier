@@ -7,9 +7,9 @@ uint32_t reverse_endian(uint32_t value) {
            ((value & 0xFF00) << 8) |
            ((value & 0xFF0000) >> 8) |
            ((value & 0xFF000000) >> 24);
-}
+};
 
-uint8_t **load_data_file(const char *filename, uint32_t *num_items, uint32_t *num_rows, uint32_t *num_cols) {
+uint8_t **load_data_file(const char *filename) {
     //opens file in read only binary mode hence "rb"
     FILE *file = fopen(filename, "rb");
     if (!file) {
@@ -61,9 +61,6 @@ uint8_t **load_data_file(const char *filename, uint32_t *num_items, uint32_t *nu
     cols = reverse_endian(cols);
 
     
-    *num_items = items;
-    *num_rows = rows;
-    *num_cols = cols;
 
     printf("Magic number: %u\n", magic_number);
     printf("Number of items: %u\n", items);
@@ -85,6 +82,51 @@ uint8_t **load_data_file(const char *filename, uint32_t *num_items, uint32_t *nu
         }
     }
 
+    fclose(file);
+    return data;
+}
+
+uint8_t* load_text_file(const char *filename) {
+    FILE *file = fopen(filename, "rb");
+    if (!file) {
+        perror("Couldn't open file");
+        return NULL;
+    }
+
+    uint32_t magic_number;
+    if (fread(&magic_number, sizeof(magic_number), 1, file) != 1) {
+        perror("Failed to read magic number");
+        fclose(file);
+        return NULL;
+    }
+    magic_number = reverse_endian(magic_number);
+
+    if (magic_number != 2049) {
+
+        perror("Invalid IDX magic_number");
+        fclose(file);
+        return NULL;
+    }
+
+    uint32_t num_items;
+    if (fread(&num_items, sizeof(num_items), 1, file) != 1) {
+        perror("Failed to read number of items");
+        fclose(file);
+        return NULL;
+    }
+    num_items = reverse_endian(num_items);
+
+
+    uint8_t *data = (uint8_t *)malloc(num_items * sizeof(uint8_t));
+    if (fread(data, sizeof(uint8_t), num_items, file) != num_items) {
+        perror("Failed to read label data");
+        fclose(file);
+        free(data);
+        return NULL;
+    }
+
+    printf("Magic number: %u\n", magic_number);
+    printf("Number of items: %u\n",num_items);
     fclose(file);
     return data;
 }

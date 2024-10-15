@@ -103,3 +103,18 @@ void network_free(Network *network) {
     free(network->outputNeuron);
 }
 
+Trainer *trainer_init(Trainer *trainer,Network *network) {
+    trainer->grad_hidden = calloc(network->neurons_hidden,sizeof(*trainer->grad_hidden));
+    trainer->grad_output = calloc(network->neurons_output,sizeof(*trainer->grad_output));
+}
+
+void trainer_Mini_Batch_train(Trainer *trainer,Network* network,double* input,double* output,double lr,int batchSize){
+    
+}
+
+void trainer_free(Trainer* trainer){
+    free(trainer->grad_hidden);
+    free(trainer->grad_output);
+}
+
+
