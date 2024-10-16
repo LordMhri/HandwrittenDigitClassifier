@@ -2,6 +2,7 @@
 #include "../include/data_loader.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char const *argv[])
 {   
@@ -10,12 +11,13 @@ int main(int argc, char const *argv[])
     uint8_t **inputTrainData = load_data_file(inputTrainDataPath);
     uint8_t *inputLabelData = load_text_file(inputLabelDataPath);
 
-    shuffle(inputTrainData,inputLabelData,300);
-
-    int num_to_load = 2;
+    srand(time(NULL));
+    int dataset_size = 60000;
+    shuffle(inputTrainData,inputLabelData,dataset_size);
+    int num_to_load = 100;
 
     for (int img_idx = 0; img_idx < num_to_load; img_idx++) {
-        printf("Number is %d\n",  + inputLabelData[img_idx]);
+        printf("Number is %d\n",  inputLabelData[img_idx]);
 
     
         // Loop through the rows and columns of each image
@@ -37,11 +39,4 @@ int main(int argc, char const *argv[])
     }
     printf("\n"); 
 }
-
-
-
-
-    // Network network = {0}; 
-    // network_init(&network,10,10,1);
-    // return 0;
 }

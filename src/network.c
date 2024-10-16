@@ -45,6 +45,65 @@ double cross_entropy_loss(double *predicted,double *actual,int num_output) {
     return loss;
 }
 
+double** get_batch_2D(double **data, uint32_t batch_size, int batch_num) {
+    double **batch = (double **)malloc(batch_size * sizeof(double *));
+    for (int i = 0; i < batch_size; i++) {
+        batch[i] = data[batch_num * batch_size + i];
+    }
+    return batch;
+}
+
+double *get_batch_1D(double *data,uint32_t batch_size,int batch_num){
+    double* batch = (double *) malloc(batch_size * sizeof(double));
+    for (int i = 0; i < batch_size; i++)
+    {
+       batch[i] = data[batch_num*batch_size + i];
+    }
+    return batch;
+}
+
+
+void backpropagation(Network *network, double *batch_output, Trainer *trainer, double learning_rate, double **inputs) {
+//calculatte output layer gradients
+    for (uint32_t i = 0; i < network->neurons_output; i++) {
+        trainer->grad_output[i] = network->outputNeuron[i] - batch_output[i]; // Simplified gradient
+    }
+
+    // Calculate hidden layer gradients using ReLU prime and gradients of output layer
+    //we're going back hence backpropagation
+    for (uint32_t i = 0; i < network->neurons_hidden; i++) {
+        double sum = 0.0;
+        for (uint32_t j = 0; j < network->neurons_output; j++) {
+            sum += trainer->grad_output[j] * network->weights_output[i * network->neurons_output + j];
+        }
+        trainer->grad_hidden[i] = sum * ReLU_Prime(network->hiddenNeuron[i]);
+    }
+
+    // Update weights for output layer
+    for (uint32_t i = 0; i < network->neurons_hidden; i++) {
+        for (uint32_t j = 0; j < network->neurons_output; j++) {
+            network->weights_output[i * network->neurons_output + j] -= learning_rate * trainer->grad_output[j] * network->hiddenNeuron[i];
+        }
+    }
+
+    // Update biases for output layer
+    for (uint32_t i = 0; i < network->neurons_output; i++) {
+        network->bias_output[i] -= learning_rate * trainer->grad_output[i];
+    }
+
+    // Update weights for hidden layer
+    for (uint32_t i = 0; i < network->neurons_input; i++) {
+        for (uint32_t j = 0; j < network->neurons_hidden; j++) {
+            network->weights_hidden[i * network->neurons_hidden + j] -= learning_rate * trainer->grad_hidden[j] * inputs[i][j];
+        }
+    }
+
+    // Update biases for hidden layer
+    for (uint32_t i = 0; i < network->neurons_hidden; i++) {
+        network->bias_hidden[i] -= learning_rate * trainer->grad_hidden[i];
+    }
+}
+
 
 void swap_double_ptrs(double **a,double **b){
     double *temp = *a;
@@ -52,29 +111,24 @@ void swap_double_ptrs(double **a,double **b){
     *b = temp; 
 }
 
-void shuffle(double **inputs,double *output,int dataset_size){
-    srand(time(NULL));
-
-    int *indices = (int*) malloc(dataset_size *sizeof(int));
-    for(int i = 0; i < indices; i++)
-    {
+void shuffle(uint8_t **inputs, uint8_t *output, int dataset_size) {
+    uint8_t *indices = (int*) malloc(dataset_size * sizeof(int));
+    for(int i = 0; i < dataset_size; i++) {
         indices[i] = i;
     }
 
-    for (int i = dataset_size- 1; i > 0; i--)
-    {
+    for (int i = dataset_size - 1; i > 0; i--) {
         int j = rand() % (i + 1);
+        swap_double_ptrs(&inputs[indices[i]], &inputs[indices[j]]);
 
-        swap_double_ptrs(&inputs[indices[i]],&inputs[indices[j]]);
-
-        //swap one_ptr
-        double temp = output[indices[i]];
+        // Swap the corresponding outputs
+        uint8_t temp = output[indices[i]];
         output[indices[i]] = output[indices[j]];
         output[indices[j]] = temp;
     }
-    
-    free(indices); 
+    free(indices);
 }
+
 
 void network_init(Network* network,int neurons_input,int neurons_hidden,int neurons_output) {
     network->neurons_input = neurons_input;
@@ -91,49 +145,42 @@ void network_init(Network* network,int neurons_input,int neurons_hidden,int neur
     network->outputNeuron = calloc(neurons_output,sizeof(*network->outputNeuron));
 
     //initialize weights
-    he_init(network->weights_hidden,neurons_output,neurons_input);
-    he_init(network->weights_output,neurons_output,neurons_input);
+    he_init(network->weights_hidden,neurons_hidden,neurons_input);  // Fix: neurons_hidden, neurons_input
+    he_init(network->weights_output,neurons_output,neurons_hidden); // Fix: neurons_output, neurons_hidden
 
-    for (int i = 0; i < network->neurons_hidden; i++)
-    {
-        printf("weight for hidden for %i is %f\n", i,network->weights_hidden[i]);
+    for (int i = 0; i < neurons_input * neurons_hidden; i++) {
+        printf("Weight for hidden neuron %i is %f\n", i, network->weights_hidden[i]);
     }
-    for (int i = 0; i < network->neurons_output; i++)
-    {
-        printf("weight for output for %i is %f\n", i,network->weights_output[i]);
+    for (int i = 0; i < neurons_hidden * neurons_output; i++) {
+        printf("Weight for output neuron %i is %f\n", i, network->weights_output[i]);
     }
-    
-
 }
 
 
-void network_predict(Network *network,double *inputs) {
-    //forward passes from input to hidden neuron
-    for (int i = 0; i < network->neurons_hidden; i++)
-    {
+
+void network_predict(Network *network, double **inputs) {
+    // Forward pass from input to hidden layer
+    for (int i = 0; i < network->neurons_hidden; i++) {
         double sum = 0.0;
-        for (int j = 0; j < network->neurons_input; j++)
-        {
-            sum += inputs[j] * network->weights_hidden[j*network->neurons_hidden + i];
+        for (int j = 0; j < network->neurons_input; j++) {
+            sum += inputs[j][i] * network->weights_hidden[j * network->neurons_hidden + i];
         }
         network->hiddenNeuron[i] = ReLU(sum + network->bias_hidden[i]);
     }
-    
 
-    //forward pass from hidden to output neuron
-    for (int i = 0; i < network->neurons_output; i++)
-    {
+    // Forward pass from hidden to output layer
+    for (int i = 0; i < network->neurons_output; i++) {
         double sum = 0.0;
-        for (int j = 0; j < network->neurons_hidden; j++)
-        {
-            sum += network->hiddenNeuron[j] * network->weights_output[j*network->neurons_hidden + i];
+        for (int j = 0; j < network->neurons_hidden; j++) {
+            sum += network->hiddenNeuron[j] * network->weights_output[j * network->neurons_output + i];
         }
-        network->outputNeuron[i] = sum+network->bias_output[i];        
+        network->outputNeuron[i] = sum + network->bias_output[i];
     }
-    
-    softmax(network->outputNeuron,network->neurons_output);
 
+    // Apply softmax to output neurons
+    softmax(network->outputNeuron, network->neurons_output);
 }
+
 
 void network_free(Network *network) {
     free(network->weights_hidden);
@@ -151,6 +198,21 @@ Trainer *trainer_init(Trainer *trainer,Network *network) {
     return trainer;
 }
 
+
+void trainer_Mini_Batch_train(Trainer *trainer, Network *network, uint8_t **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t  dataset_size) {
+    for (int e = 0; e < epoch ; e++) {
+        int num_of_batch = dataset_size / batch_size;
+        shuffle(input, output, dataset_size);
+        for (int n = 0; n < num_of_batch; n++) {
+            double **input_batch = get_batch_2D(input, batch_size, n);
+            double *output_batch = get_batch_1D(output, batch_size, n);
+            network_predict(network, input_batch);
+            double loss = cross_entropy_loss(network->outputNeuron, output_batch, network->neurons_output);
+            printf("Epoch %d, Batch %d, Loss: %f\n", e, n, loss);
+            backpropagation(network, output_batch, trainer, learning_rate, input_batch);
+        }
+    }
+}
 
 void trainer_free(Trainer* trainer){
     free(trainer->grad_hidden);
