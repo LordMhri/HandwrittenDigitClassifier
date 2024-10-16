@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 
 //he_intialization of random weights
 void he_init(double *weights,int neurons_output,int neurons_input) {
@@ -17,7 +18,7 @@ double ReLU(double x){
 }
 
 double ReLU_Prime(double x) {
-    return 1 > 0 ? x : 0;
+    return x > 0 ? 1 : 0;
 }
 
 void softmax(double *input,int length) {
@@ -33,6 +34,46 @@ void softmax(double *input,int length) {
     }
     // class i = e^input[i] / sum of e^input[i] from i = 0 to i
   
+}
+
+double cross_entropy_loss(double *predicted,double *actual,int num_output) {
+    double loss = 0.0;
+    for (int i = 0; i < num_output; i++)
+    {
+        loss -= actual[i] * log(predicted[i] + 1e-9);
+    }
+    return loss;
+}
+
+
+void swap_double_ptrs(double **a,double **b){
+    double *temp = *a;
+    *a = *b;
+    *b = temp; 
+}
+
+void shuffle(double **inputs,double *output,int dataset_size){
+    srand(time(NULL));
+
+    int *indices = (int*) malloc(dataset_size *sizeof(int));
+    for(int i = 0; i < indices; i++)
+    {
+        indices[i] = i;
+    }
+
+    for (int i = dataset_size- 1; i > 0; i--)
+    {
+        int j = rand() % (i + 1);
+
+        swap_double_ptrs(&inputs[indices[i]],&inputs[indices[j]]);
+
+        //swap one_ptr
+        double temp = output[indices[i]];
+        output[indices[i]] = output[indices[j]];
+        output[indices[j]] = temp;
+    }
+    
+    free(indices); 
 }
 
 void network_init(Network* network,int neurons_input,int neurons_hidden,int neurons_output) {
@@ -106,11 +147,10 @@ void network_free(Network *network) {
 Trainer *trainer_init(Trainer *trainer,Network *network) {
     trainer->grad_hidden = calloc(network->neurons_hidden,sizeof(*trainer->grad_hidden));
     trainer->grad_output = calloc(network->neurons_output,sizeof(*trainer->grad_output));
+      
+    return trainer;
 }
 
-void trainer_Mini_Batch_train(Trainer *trainer,Network* network,double* input,double* output,double lr,int batchSize){
-    
-}
 
 void trainer_free(Trainer* trainer){
     free(trainer->grad_hidden);
