@@ -20,7 +20,7 @@ typedef struct Network
 
 void network_init(Network* net,int neurons_input,int neurons_hidden,int neurons_output);
 void network_free(Network *net);
-void network_predict(Network *net,uint8_t **inputs);
+void network_predict(Network *net,uint8_t *inputs);
 
 
 typedef struct Trainer
