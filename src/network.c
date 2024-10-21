@@ -173,7 +173,7 @@ void network_predict(Network *network, double *inputs) {
 
 
     // for (int i = 0; i < network->neurons_output; i++) {
-    //     printf("sum is %f for neuron %d\n", network->outputNeuron[i], i+1);
+    //     printf("sum is %f for neuron %d\n", network->outputNeuron[i], i);
     // }
 
     // Forward pass from hidden to output layer
@@ -189,7 +189,7 @@ void network_predict(Network *network, double *inputs) {
     softmax(network->outputNeuron, network->neurons_output);
 
     // for (int i = 0; i < network->neurons_output; i++) {
-    //     printf("after softmax, %f number is %d\n", network->outputNeuron[i], i);
+    //     printf("after softmax, number %d is %f\n", i, network->outputNeuron[i]);
     // }
 }
 

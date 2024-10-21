@@ -16,7 +16,7 @@ int main(int argc, char const *argv[]) {
     uint8_t *inputLabelData = load_text_file(inputLabelDataPath);
     
     srand(time(NULL));
-    int dataset_size = 60000;
+    int dataset_size = 1000;
     shuffle(inputTrainData, inputLabelData, dataset_size);
 
     double **normalized_data = normalize_image_data(inputTrainData,dataset_size); 
@@ -42,7 +42,7 @@ int main(int argc, char const *argv[]) {
 
     //Initialize network
     Network network = {0};
-    network_init(&network, 28 * 28, 128, 10);
+    network_init(&network, 28 * 28, 512, 10);
 
     // Initialize trainer
     Trainer trainer = {0};
