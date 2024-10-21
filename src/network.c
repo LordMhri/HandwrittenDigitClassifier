@@ -21,23 +21,24 @@ double ReLU_Prime(double x) {
     return x > 0 ? 1 : 0;
 }
 
-void softmax(double *input,int length) {
+void softmax(double *input, int length) {
+    double max_input = input[0];
+    for (int i = 1; i < length; i++) {
+        if (input[i] > max_input) {
+            max_input = input[i];
+        }
+    }
+
     double sum = 0.0;
-    for (int i = 0; i < length; i++)
-    {
-        input[i] = exp(input[i]);
-        sum  += input[i];
+    for (int i = 0; i < length; i++) {
+        input[i] = exp(input[i] - max_input);
+        sum += input[i];
     }
-    for (int i = 0; i < length; i++)
-    {
-        input[i] /= sum;
-    }
-    // class i = e^input[i] / sum of e^input[i] from i = 0 to i
-  
+
 }
 
 double cross_entropy_loss(double *predicted,uint8_t *actual,int num_output) {
-    uint8_t loss = 0.0;
+    double loss = 0.0;
     for (int i = 0; i < num_output; i++)
     {
         loss -= actual[i] * log(predicted[i] + 1e-9);
@@ -45,18 +46,20 @@ double cross_entropy_loss(double *predicted,uint8_t *actual,int num_output) {
     return loss;
 }
 
-uint8_t** get_batch_2D(uint8_t **input, uint32_t batch_size, uint8_t batch_index) {
+double** get_batch_2D(double **input, uint32_t batch_size, uint8_t batch_index) {
     // Allocate memory for the batch of images
-    uint8_t **batch = calloc(batch_size, sizeof(uint8_t*));
+    double **batch = calloc(batch_size, sizeof(double*));
+    // printf("We're called here!");
 
     for (uint32_t b = 0; b < batch_size; b++) {
         // Allocate memory for each image (28 * 28)
-        batch[b] = malloc(28 * 28 * sizeof(uint8_t));
+        batch[b] = malloc(28 * 28 * sizeof(double));
 
         // Copy the image data from the input dataset
         for (int row = 0; row < 28; row++) {
             for (int col = 0; col < 28; col++) {
                 batch[b][row * 28 + col] = input[batch_index * batch_size + b][row * 28 + col];
+                // printf("batch[b][row * 28 + col] is %f\n",batch[b][row * 28 + col] );
             }
         }
     }
@@ -65,7 +68,7 @@ uint8_t** get_batch_2D(uint8_t **input, uint32_t batch_size, uint8_t batch_index
 
 
 
-void backpropagation(Network *network, uint8_t *batch_output, Trainer *trainer, double learning_rate, uint8_t *inputs) {
+void backpropagation(Network *network, uint8_t *batch_output, Trainer *trainer, double learning_rate, double *inputs) {
     // Calculate output layer gradients
     for (int i = 0; i < network->neurons_output; i++) {
         trainer->grad_output[i] = network->outputNeuron[i] - batch_output[i];
@@ -107,28 +110,23 @@ void backpropagation(Network *network, uint8_t *batch_output, Trainer *trainer, 
 
 
 
-void swap_double_ptrs(uint8_t **a,uint8_t **b){
-    uint8_t *temp = *a;
+void swap_double_ptrs(double **a, double **b) {
+    double *temp = *a;
     *a = *b;
-    *b = temp; 
+    *b = temp;
 }
 
-void shuffle(uint8_t **inputs, uint8_t *output, int dataset_size) {
-    uint8_t *indices = (uint8_t*) malloc(dataset_size * sizeof(uint8_t));
-    for(int i = 0; i < dataset_size; i++) {
-        indices[i] = i;
-    }
-
+//this works now
+void shuffle(double **inputs, uint8_t *output, int dataset_size) {
     for (int i = dataset_size - 1; i > 0; i--) {
         int j = rand() % (i + 1);
-        swap_double_ptrs(&inputs[indices[i]], &inputs[indices[j]]);
+        swap_double_ptrs(&inputs[i], &inputs[j]);
 
-        // Swap the corresponding outputs
-        uint8_t temp = output[indices[i]];
-        output[indices[i]] = output[indices[j]];
-        output[indices[j]] = temp;
+        uint8_t temp = output[i];
+        // printf("temp is %d\n",temp);
+        output[i] = output[j];
+        output[j] = temp;
     }
-    free(indices);
 }
 
 
@@ -157,27 +155,42 @@ void network_init(Network* network,int neurons_input,int neurons_hidden,int neur
 
 
 
-void network_predict(Network *network, uint8_t *inputs) {
+void network_predict(Network *network, double *inputs) {
 
     // Forward pass from input to hidden layer
     for (int i = 0; i < network->neurons_hidden; i++) {
         double sum = 0.0;
         for (int j = 0; j < network->neurons_input; j++) {
             sum += inputs[j] * network->weights_hidden[j * network->neurons_hidden + i];
+            // printf("input in forward pass is %f\n",inputs[j]);
+            // printf("network weight in forward pass is %f\n",network->weights_hidden[j * network->neurons_hidden + i]);
+
         }
+        // printf("sum is %f\n",sum);
         network->hiddenNeuron[i] = ReLU(sum + network->bias_hidden[i]);
+        // printf("hidden network neuron is %f\n",network->hiddenNeuron[i]);
     }
+
+
+    // for (int i = 0; i < network->neurons_output; i++) {
+    //     printf("sum is %f for neuron %d\n", network->outputNeuron[i], i);
+    // }
 
     // Forward pass from hidden to output layer
     for (int i = 0; i < network->neurons_output; i++) {
-        double sum = 0.0;
+        double sum = 0.0; 
         for (int j = 0; j < network->neurons_hidden; j++) {
             sum += network->hiddenNeuron[j] * network->weights_output[j * network->neurons_output + i];
         }
         network->outputNeuron[i] = sum + network->bias_output[i];
     }
-    // Apply softmax to output neurons
+
+
     softmax(network->outputNeuron, network->neurons_output);
+
+    // for (int i = 0; i < network->neurons_output; i++) {
+    //     printf("after softmax, number %d is %f\n", i, network->outputNeuron[i]);
+    // }
 }
 
 
@@ -198,50 +211,64 @@ Trainer *trainer_init(Trainer *trainer,Network *network) {
     return trainer;
 }
 
-uint8_t* flatten_2D(uint8_t **input) {
-    uint8_t* flattend_input = calloc(28*28,sizeof(uint8_t));
-    for (uint8_t row = 0; row < 28; row++)
-    {
-        for (uint8_t col = 0; col < 28; col++)
-        {
-            flattend_input[row*28+col] = input[row][col];
+double* flatten_2D(double **input, uint32_t index) {
+    double* flattened_input = calloc(28 * 28, sizeof(double));
+    
+    for (uint8_t row = 0; row < 28; row++) {
+        for (uint8_t col = 0; col < 28; col++) {
+            flattened_input[row * 28 + col] = input[index][row * 28 + col];
+            // printf("flattened_input[row * 28 + col] is %f\n",flattened_input[row * 28 + col]);
         }
     }
-    
-    return flattend_input;
+
+    return flattened_input;
 }
 
-
-void trainer_Mini_Batch_train(Trainer *trainer, Network *network, uint8_t **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t dataset_size) {
+void trainer_Mini_Batch_train(Trainer *trainer, Network *network, double **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t dataset_size) {
     for (uint8_t e = 0; e < epoch; e++) {
         shuffle(input, output, dataset_size);
-        uint8_t num_of_batches = dataset_size / batch_size;
-        
+        uint32_t num_of_batches = (uint32_t) dataset_size / batch_size;
+
         double total_loss = 0.0;  // Initialize total loss for the epoch
 
-        for (uint8_t n = 0; n < num_of_batches; n++) {
-            uint8_t **inputBatch2D = get_batch_2D(input, batch_size, n);
-            for (uint8_t b = 0; b < batch_size; b++) {
-                uint8_t *inputBatch = flatten_2D(inputBatch2D);
+        // printf("We're here yay\n");
+        for (uint32_t n = 0; n < num_of_batches; n++) {
+            double **inputBatch2D = get_batch_2D(input, batch_size, n);
+            
+            for (uint32_t b = 0; b < batch_size; b++) {
+                double *inputBatch = flatten_2D(inputBatch2D, b);
                 network_predict(network, inputBatch);
 
-                // Calculate loss for the current sample
-                double loss = cross_entropy_loss(network->outputNeuron, &output[b * network->neurons_output], network->neurons_output);
-                total_loss += loss;  // Accumulate loss for averaging
 
-                // Call backpropagation to update weights and biases
+                double loss = cross_entropy_loss(network->outputNeuron, &output[b * network->neurons_output], network->neurons_output);
+                total_loss += loss;
+
                 backpropagation(network, &output[b * network->neurons_output], trainer, learning_rate, inputBatch);
-                
-                free(inputBatch);  // Free the flattened input after use
+
+                free(inputBatch);
             }
-            free(inputBatch2D);  // Free the batch after use
+
+            // Free each image in the batch
+            for (uint32_t b = 0; b < batch_size; b++) {
+                free(inputBatch2D[b]);
+            }
+
+            // Free batch array
+            free(inputBatch2D);
         }
+
+        for (int i = 0; i < network->neurons_hidden; i++)
+        {
+            // printf("output neuron for neuron number %d is %.2f\n",i+1,network->outputNeuron[i]);
+        }
+        
 
         // Calculate and print average loss for the epoch
         double average_loss = total_loss / (num_of_batches * batch_size);
         printf("Epoch %d: Average Loss = %f\n", e + 1, average_loss);
     }
 }
+
 
 
 

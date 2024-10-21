@@ -2,10 +2,10 @@
 CC = gcc
 
 # Compiler flags
-CFLAGS = -I./include -Wall -Wextra -std=c11
+CFLAGS = -I./include -Wall -Wextra -std=c17
 
 # Source files
-SRCS = main.c data_loader.c network.c
+SRCS = main.c data_loader.c network.c utils.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
