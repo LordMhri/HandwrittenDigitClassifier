@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define BATCH_SIZE 32
-#define LEARNING_RATE 0.11
-#define EPOCHS 10
+#define BATCH_SIZE 64
+#define LEARNING_RATE 0.005
+#define EPOCHS 100
 
 int main(int argc, char const *argv[]) {
     const char *inputTrainDataPath = "../dataset/train-images.idx3-ubyte";
@@ -40,9 +40,9 @@ int main(int argc, char const *argv[]) {
     //     printf("\n");
     // }
 
-    //Initialize network
+    // Initialize network
     Network network = {0};
-    network_init(&network, 28 * 28, 512, 10);
+    network_init(&network, 28 * 28, 128, 10);
 
     // Initialize trainer
     Trainer trainer = {0};
