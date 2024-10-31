@@ -6,8 +6,8 @@
 #include <time.h>
 
 #define BATCH_SIZE 64
-#define LEARNING_RATE 0.005
-#define EPOCHS 100
+#define LEARNING_RATE 0.001
+#define EPOCHS 10
 
 int main(int argc, char const *argv[]) {
     const char *inputTrainDataPath = "../dataset/train-images.idx3-ubyte";
@@ -16,7 +16,7 @@ int main(int argc, char const *argv[]) {
     uint8_t *inputLabelData = load_text_file(inputLabelDataPath);
     
     srand(time(NULL));
-    int dataset_size = 1000;
+    int dataset_size =4096;
     shuffle(inputTrainData, inputLabelData, dataset_size);
 
     double **normalized_data = normalize_image_data(inputTrainData,dataset_size); 
