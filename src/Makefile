@@ -4,6 +4,9 @@ CC = gcc
 # Compiler flags
 CFLAGS = -I./include -Wall -Wextra -std=c17
 
+# Linker flags
+LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lopenblas -lm
+
 # Source files
 SRCS = main.c data_loader.c network.c utils.c
 
@@ -18,7 +21,7 @@ all: $(EXEC)
 
 # Link object files to create the executable
 $(EXEC): $(OBJS)
-	$(CC) $(OBJS) -o $(EXEC) -lm
+	$(CC) $(OBJS) -o $(EXEC) $(LDFLAGS)
 
 # Compile source files into object files
 %.o: %.c

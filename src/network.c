@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
+#include <cblas.h>
 
 //he_intialization of random weights
 void he_init(double *weights,int neurons_output,int neurons_input) {
@@ -182,33 +183,20 @@ void clip_gradients(double *gradients, int size, double threshold)
 
 void network_predict(Network *network, double *inputs) {
 
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, network->neurons_hidden, network->neurons_input, 1.0, network->weights_hidden, network->neurons_input, inputs, 1, 1.0, network->hiddenNeuron, 1);
+
     // Forward pass from input to hidden layer
-    for (int i = 0; i < network->neurons_hidden; i++) {
-        double sum = 0.0;
-        for (int j = 0; j < network->neurons_input; j++) {
-            sum += inputs[j] * network->weights_hidden[j * network->neurons_hidden + i];
-            // printf("input in forward pass is %f\n",inputs[j]);
-            // printf("network weight in forward pass is %f\n",network->weights_hidden[j * network->neurons_hidden + i]);
-
-        }
-        // printf("sum is %f\n",sum);
-        network->hiddenNeuron[i] = ReLU(sum + network->bias_hidden[i]);
-        // printf("hidden network neuron is %f\n",network->hiddenNeuron[i]);
+    // Apply activation function (e.g., ReLU)
+    for (int i = 0; i < network->neurons_hidden; i++)
+    {
+        network->hiddenNeuron[i] = ReLU(network->hiddenNeuron[i]);
     }
-
 
     // for (int i = 0; i < network->neurons_output; i++) {
     //     printf("sum is %f for neuron %d\n", network->outputNeuron[i], i);
     // }
 
-    // Forward pass from hidden to output layer
-    for (int i = 0; i < network->neurons_output; i++) {
-        double sum = 0.0; 
-        for (int j = 0; j < network->neurons_hidden; j++) {
-            sum += network->hiddenNeuron[j] * network->weights_output[j * network->neurons_output + i];
-        }
-        network->outputNeuron[i] = sum + network->bias_output[i];
-    }
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, network->neurons_output, network->neurons_hidden, 1.0, network->weights_output, network->neurons_hidden, network->hiddenNeuron, 1, 1.0, network->outputNeuron, 1);
 
 
     softmax(network->outputNeuron, network->neurons_output);
@@ -303,7 +291,10 @@ void trainer_Mini_Batch_train(Trainer *trainer, Network *network, double **input
             // Free batch array
             free(inputBatch2D);
         }
-
+        // there needs to be some change here
+        // we already look divide total_loss by the batch size in the cross entropy loss function
+        //so it seems wrong to again use it here
+        // average_loss should be total_loss / num of batches not num of batches * batch_size
         double average_loss = total_loss / (num_of_batches * batch_size);
         printf("Epoch %d: Average Loss = %f\n", e + 1, average_loss);
     }
