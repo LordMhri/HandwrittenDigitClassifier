@@ -1,9 +1,11 @@
 #include "../include/network.h"
+#include "../include/trainer.h"
 #include "../include/data_loader.h"
 #include "../include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
 
 #define BATCH_SIZE 64
 #define LEARNING_RATE 0.001
