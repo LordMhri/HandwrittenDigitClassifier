@@ -10,3 +10,6 @@ classifies 28x28 grayscale images of handwritten digits (0-9) using a neural net
 - **Optimization** : Gradient descent with mini batches
 ## Network Architecture
 - **Input Layer** : 28*28 / 784 neurons ( for each pixel in an image)
+- **Hidden Layer** : 128 neurons (might change becuase this is still a work in progress)
+- **Output Layer** : 10 neurons
+
