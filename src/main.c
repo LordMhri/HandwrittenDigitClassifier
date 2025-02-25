@@ -11,7 +11,7 @@
 #define LEARNING_RATE 0.001
 #define EPOCHS 10
 
-int main(int argc, char const *argv[]) {
+int main() {
     const char *inputTrainDataPath = "../dataset/train-images.idx3-ubyte";
     const char *inputLabelDataPath = "../dataset/train-labels.idx1-ubyte";
     uint8_t **inputTrainData = load_data_file(inputTrainDataPath);

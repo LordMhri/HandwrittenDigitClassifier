@@ -23,15 +23,6 @@ void network_free(Network *net);
 void network_predict(Network *net,double *inputs);
 
 
-typedef struct Trainer
-{
-    double *grad_hidden;
-    double *grad_output;
-} Trainer;
 
-Trainer* trainer_init(Trainer *trainer,Network *net);
-void trainer_free(Trainer *trainer);
-void trainer_SGD_train(Trainer* trainer, Network* network, double* input, double* output, double lr);
-void trainer_Mini_Batch_train(Trainer *trainer, Network *network, double **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t  dataset_size);
 //too many parameters , will do for now
 #endif

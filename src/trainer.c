@@ -3,6 +3,7 @@
 #include "../include/network.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 Trainer *trainer_init(Trainer *trainer,Network *network) {
     trainer->grad_hidden = calloc(network->neurons_hidden,sizeof(*trainer->grad_hidden));
@@ -24,7 +25,93 @@ double* flatten_2D(double **input, uint32_t index) {
     return flattened_input;
 }
 
-void trainer_Mini_Batch_train(Trainer *trainer, Network *network, double **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t dataset_size)
+
+// double cross_entropy_loss(double *output, uint8_t *label, uint32_t batch_size) {
+//     double loss = 0.0;
+//     for (uint32_t i = 0; i < batch_size; i++)
+//     {
+//         loss += -log(output[i * 10 + label[i]]);
+//     }
+//     return loss / batch_size;
+// }
+
+void clip_gradients(double *gradients, uint32_t size, double threshold) {
+    for (uint32_t i = 0; i < size; i++)
+    {
+        if (gradients[i] > threshold)
+        {
+            gradients[i] = threshold;
+        }
+        else if (gradients[i] < -threshold)
+        {
+            gradients[i] = -threshold;
+        }
+    }
+}
+
+int ReLU(double x) {
+    return x > 0 ? x : 0;
+}
+
+int ReLU_Prime(double x) {
+    return x > 0 ? 1 : 0;
+}
+
+void backpropagation(Network *network, uint8_t *batch_output, Trainer *trainer, double learning_rate, double *inputs) {
+    // Calculate output layer gradients
+    for (int i = 0; i < network->neurons_output; i++)
+    {
+        trainer->grad_output[i] = network->outputNeuron[i] - batch_output[i];
+        // printf("Output gradients %f\n", trainer->grad_output[i]);
+    }
+    clip_gradients(trainer->grad_output, network->neurons_output, 1.0);
+
+    // Calculate hidden layer gradients
+    for (int i = 0; i < network->neurons_hidden; i++)
+    {
+        double sum = 0.0;
+        for (int j = 0; j < network->neurons_output; j++)
+        {
+            sum += trainer->grad_output[j] * network->weights_output[i * network->neurons_output + j];
+        }
+        trainer->grad_hidden[i] = sum * ReLU_Prime(network->hiddenNeuron[i]);
+        // printf("hidden gradients %f\n", trainer->grad_hidden[i]);
+    }
+
+    clip_gradients(trainer->grad_hidden, network->neurons_hidden, 1.0);
+
+    // Update weights for the output layer
+    for (int i = 0; i < network->neurons_hidden; i++)
+    {
+        for (int j = 0; j < network->neurons_output; j++)
+        {
+            network->weights_output[i * network->neurons_output + j] -= learning_rate * trainer->grad_output[j] * network->hiddenNeuron[i];
+        }
+    }
+
+    // Update biases for the output layer
+    for (int i = 0; i < network->neurons_output; i++)
+    {
+        network->bias_output[i] -= learning_rate * trainer->grad_output[i];
+    }
+
+    // Update weights for the hidden layer
+    for (int i = 0; i < network->neurons_input; i++)
+    {
+        for (int j = 0; j < network->neurons_hidden; j++)
+        {
+            network->weights_hidden[i * network->neurons_hidden + j] -= learning_rate * trainer->grad_hidden[j] * inputs[i];
+        }
+    }
+
+    // Update biases for the hidden layer
+    for (int i = 0; i < network->neurons_hidden; i++)
+    {
+        network->bias_hidden[i] -= learning_rate * trainer->grad_hidden[i];
+    }
+};
+
+void trainer_Mini_Batch_train(Trainer *trainer, Network *network, uint8_t **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t dataset_size)
 {
     for (uint8_t e = 0; e < epoch; e++)
     {

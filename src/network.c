@@ -5,7 +5,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
-#include <cblas.h>
+#include <openblas/cblas.h>
 
 //he_intialization of random weights
 void he_init(double *weights,int neurons_output,int neurons_input) {
@@ -16,33 +16,6 @@ void he_init(double *weights,int neurons_output,int neurons_input) {
     }
 }
 
-void clip_gradients(double *gradients, int size, double threshold)
-{
-    double norm = 0.0;
-    for (int i = 0; i < size; i++)
-    {
-        norm += gradients[i] * gradients[i];
-    }
-    norm = sqrt(norm);
-
-    if (norm > threshold)
-    {
-        double scale = threshold / norm;
-        for (int i = 0; i < size; i++)
-        {
-            gradients[i] *= scale;
-        }
-    }
-}
-
-double ReLU(double x){
-    return x > 0 ? x : 0.01*x;
-}
-
-double ReLU_Prime(double x) {
-    //experimenting with leakyReLu because of dead neurons
-    return x > 0 ? 1 : 0.01;
-}
 
 void softmax(double *input, int length) {
     double max_input = input[0];
@@ -63,59 +36,6 @@ void softmax(double *input, int length) {
     }
 }
 
-
-void backpropagation(Network *network, uint8_t *batch_output, Trainer *trainer, double learning_rate, double *inputs) {
-    // Calculate output layer gradients
-    for (int i = 0; i < network->neurons_output; i++) {
-        trainer->grad_output[i] = network->outputNeuron[i] - batch_output[i];
-        // printf("Output gradients %f\n", trainer->grad_output[i]);
-    }
-    clip_gradients(trainer->grad_output, network->neurons_output, 1.0);
-
-    // Calculate hidden layer gradients
-    for (int i = 0; i < network->neurons_hidden; i++) {
-        double sum = 0.0;
-        for (int j = 0; j < network->neurons_output; j++) {
-            sum += trainer->grad_output[j] * network->weights_output[i * network->neurons_output + j];
-        }
-        trainer->grad_hidden[i] = sum * ReLU_Prime(network->hiddenNeuron[i]);
-        // printf("hidden gradients %f\n", trainer->grad_hidden[i]);
-    }
-
-    clip_gradients(trainer->grad_hidden, network->neurons_hidden, 1.0);
-
-    // Update weights for the output layer
-    for (int i = 0; i < network->neurons_hidden; i++) {
-        for (int j = 0; j < network->neurons_output; j++) {
-            network->weights_output[i * network->neurons_output + j] -= learning_rate * trainer->grad_output[j] * network->hiddenNeuron[i];
-        }
-    }
-
-    // Update biases for the output layer
-    for (int i = 0; i < network->neurons_output; i++) {
-        network->bias_output[i] -= learning_rate * trainer->grad_output[i];
-    }
-
-    // Update weights for the hidden layer
-    for (int i = 0; i < network->neurons_input; i++) {
-        for (int j = 0; j < network->neurons_hidden; j++) {
-            network->weights_hidden[i * network->neurons_hidden + j] -= learning_rate * trainer->grad_hidden[j] * inputs[i]; 
-        }
-    }
-
-    // Update biases for the hidden layer
-    for (int i = 0; i < network->neurons_hidden; i++) {
-        network->bias_hidden[i] -= learning_rate * trainer->grad_hidden[i];
-    }
-}
-
-
-
-void swap_double_ptrs(double **a, double **b) {
-    double *temp = *a;
-    *a = *b;
-    *b = temp;
-}
 
 
 void network_init(Network* network,int neurons_input,int neurons_hidden,int neurons_output) {

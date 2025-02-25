@@ -40,7 +40,13 @@ double** get_batch_2D(double **input, uint32_t batch_size, uint8_t batch_index) 
     return batch;
 }
 
-void shuffle(double **inputs, uint8_t *output, int dataset_size) {
+void swap_double_ptrs(uint8_t** a,uint8_t** b){
+    uint8_t *temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void shuffle(uint8_t **inputs, uint8_t *output, int dataset_size) {
     for (int i = dataset_size - 1; i > 0; i--) {
         int j = rand() % (i + 1);
         swap_double_ptrs(&inputs[i], &inputs[j]);
