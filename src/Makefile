@@ -2,7 +2,7 @@
 CC = gcc
 
 # Compiler flags
-CFLAGS = -I./include -Wall -Wextra -std=c17
+CFLAGS = -I./include -Wall -Wextra -std=c17 -g
 
 # Linker flags
 LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lopenblas -lm
