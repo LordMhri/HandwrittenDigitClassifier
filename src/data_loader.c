@@ -7,78 +7,74 @@ uint32_t reverse_endian(uint32_t value) {
            ((value & 0xFF00) << 8) |
            ((value & 0xFF0000) >> 8) |
            ((value & 0xFF000000) >> 24);
-};
+}
 
-uint8_t **load_data_file(const char *filename) {
-    //opens file in read only binary mode hence "rb"
+double **load_data_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         perror("Failed to open file");
         return NULL;
     }
 
-    // Read magic number (4 bytes)
-    uint32_t magic_number;
-    if (fread(&magic_number, sizeof(magic_number), 1, file) != 1) {
-        perror("Failed to read magic number");
-        fclose(file);
-        return NULL;
-    }
-    magic_number = reverse_endian(magic_number);
-
-    //magic number for idx files containing images is 2051
-    if (magic_number != 2051) {
-        perror("Invalid IDX Format magic number");
+    idx_header header; // Use the idx_header struct
+    if (fread(&header.magic_number, sizeof(uint32_t), 1, file) != 1 || // Read header components directly into struct
+        fread(&header.num_items, sizeof(uint32_t), 1, file) != 1 ||
+        fread(&header.num_rows, sizeof(uint32_t), 1, file) != 1 || // Read rows
+        fread(&header.num_cols, sizeof(uint32_t), 1, file) != 1)   // Read cols
+    {
+        perror("Failed to read IDX header");
         fclose(file);
         return NULL;
     }
 
-    //number of items aka image in the binary file
-    uint32_t items;
-    if (fread(&items, sizeof(items), 1, file) != 1) {
-        perror("Failed to read number of items");
+    header.magic_number = reverse_endian(header.magic_number);
+    header.num_items = reverse_endian(header.num_items);
+    header.num_rows = reverse_endian(header.num_rows);
+    header.num_cols = reverse_endian(header.num_cols);
+
+    if (header.magic_number != 2051) { // Magic number for images
+        fprintf(stderr, "Invalid magic number: %u. Expected 2051 for image file.\n", header.magic_number); // Use stderr for errors
         fclose(file);
         return NULL;
     }
-    items = reverse_endian(items);
 
-    //number of rows(height) of each image 
-    uint32_t rows;
-    if (fread(&rows, sizeof(rows), 1, file) != 1) {
-        perror("Failed to read number of rows");
+    printf("Magic number: %u\n", header.magic_number);
+    printf("Number of items: %u\n", header.num_items);
+    printf("Number of rows: %u\n", header.num_rows);
+    printf("Number of columns: %u\n", header.num_cols);
+
+    double **data = (double **)malloc(header.num_items * sizeof(double *));
+    if (!data) { // Check malloc success
+        perror("Memory allocation failed for image data pointers");
         fclose(file);
         return NULL;
     }
-    rows = reverse_endian(rows);
 
-    //number of cols(width) of each image
-    uint32_t cols;
-    if (fread(&cols, sizeof(cols), 1, file) != 1) {
-        perror("Failed to read number of columns");
-        fclose(file);
-        return NULL;
-    }
-    cols = reverse_endian(cols);
-
-    
-
-    printf("Magic number: %u\n", magic_number);
-    printf("Number of items: %u\n", items);
-    printf("Number of rows: %u\n", rows);
-    printf("Number of columns: %u\n", cols);
-
-    // Allocate memory for the image data (2D images: items x (rows * cols))
-    uint8_t **data = (uint8_t **) malloc(items * sizeof(uint8_t *));
-
-
-    for (uint32_t i = 0; i < items; i++) {
-        //allocates memory for each item (image)
-        //each image has height and width so allocates memory of size rows*cols
-        data[i] = (uint8_t *)malloc(rows * cols * sizeof(uint8_t));
-        if (fread(data[i], sizeof(uint8_t), rows * cols, file) != rows * cols) {
-            perror("Failed to read image data");
+    for (uint32_t i = 0; i < header.num_items; i++) {
+        data[i] = (double *)malloc(header.num_rows * header.num_cols * sizeof(double));
+        if (!data[i]) { // Check malloc success
+            perror("Memory allocation failed for image data");
+            // Clean up previously allocated memory
+            for (uint32_t j = 0; j < i; j++) {
+                free(data[j]);
+            }
+            free(data);
             fclose(file);
             return NULL;
+        }
+        uint8_t pixel_value; // Read as uint8_t first
+        for (uint32_t j = 0; j < header.num_rows * header.num_cols; j++) {
+            if (fread(&pixel_value, sizeof(uint8_t), 1, file) != 1) { // Read each pixel as uint8_t
+                perror("Failed to read pixel data");
+                // Clean up allocated memory
+                for (uint32_t k = 0; k <= i; k++) {
+                    free(data[k]);
+                }
+                free(data);
+                fclose(file);
+                return NULL;
+            }
+            data[i][j] = (double)pixel_value / 255.0; // Normalize to double here
         }
     }
 
@@ -86,47 +82,50 @@ uint8_t **load_data_file(const char *filename) {
     return data;
 }
 
-uint8_t* load_text_file(const char *filename) {
+uint8_t *load_text_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         perror("Couldn't open file");
         return NULL;
     }
 
-    uint32_t magic_number;
-    if (fread(&magic_number, sizeof(magic_number), 1, file) != 1) {
-        perror("Failed to read magic number");
-        fclose(file);
-        return NULL;
-    }
-    magic_number = reverse_endian(magic_number);
-
-    if (magic_number != 2049) {
-
-        perror("Invalid IDX magic_number");
+    idx_header header; // Use idx_header struct
+    if (fread(&header.magic_number, sizeof(uint32_t), 1, file) != 1 || // Read header components directly into struct
+        fread(&header.num_items, sizeof(uint32_t), 1, file) != 1)
+    {
+        perror("Failed to read IDX header");
         fclose(file);
         return NULL;
     }
 
-    uint32_t num_items;
-    if (fread(&num_items, sizeof(num_items), 1, file) != 1) {
-        perror("Failed to read number of items");
+
+    header.magic_number = reverse_endian(header.magic_number);
+    header.num_items = reverse_endian(header.num_items);
+
+
+    if (header.magic_number != 2049) { // Magic number for labels
+        fprintf(stderr, "Invalid magic number: %u. Expected 2049 for label file.\n", header.magic_number); // Use stderr for errors
         fclose(file);
         return NULL;
     }
-    num_items = reverse_endian(num_items);
 
+    printf("Magic number: %u\n", header.magic_number);
+    printf("Number of items: %u\n", header.num_items);
 
-    uint8_t *data = (uint8_t *)malloc(num_items * sizeof(uint8_t));
-    if (fread(data, sizeof(uint8_t), num_items, file) != num_items) {
+    uint8_t *data = (uint8_t *)malloc(header.num_items * sizeof(uint8_t));
+    if (!data) { // Check malloc success
+        perror("Memory allocation failed for label data");
+        fclose(file);
+        return NULL;
+    }
+
+    if (fread(data, sizeof(uint8_t), header.num_items, file) != header.num_items) {
         perror("Failed to read label data");
-        fclose(file);
         free(data);
+        fclose(file);
         return NULL;
     }
 
-    printf("Magic number: %u\n", magic_number);
-    printf("Number of items: %u\n",num_items);
     fclose(file);
     return data;
 }
