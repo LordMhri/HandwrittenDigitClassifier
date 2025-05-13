@@ -8,6 +8,7 @@ uint32_t reverse_endian(uint32_t value) {
            ((value & 0xFF0000) >> 8) |
            ((value & 0xFF000000) >> 24);
 }
+
 double **load_data_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
@@ -15,7 +16,6 @@ double **load_data_file(const char *filename) {
         return NULL;
     }
 
-    // Read the header
     idx_header header;
     if (fread(&header.magic_number, sizeof(uint32_t), 1, file) != 1) {
         perror("Failed to read magic number");
@@ -25,14 +25,13 @@ double **load_data_file(const char *filename) {
 
     header.magic_number = reverse_endian(header.magic_number);
 
-    if (header.magic_number != 2051) { // Magic number for image files
+    if (header.magic_number != 2051) {
         fprintf(stderr, "Invalid magic number: %u. Expected 2051 for image file.\n", header.magic_number);
         fclose(file);
         return NULL;
     }
 
-    // Read the number of dimensions
-    uint32_t num_dimensions = 3; 
+    uint32_t num_dimensions = 3;
     uint32_t dimensions[num_dimensions];
     if (fread(dimensions, sizeof(uint32_t), num_dimensions, file) != num_dimensions) {
         perror("Failed to read dimensions");
@@ -40,7 +39,7 @@ double **load_data_file(const char *filename) {
         return NULL;
     }
 
-    for (int i = 0; i < num_dimensions; i++) {
+    for (uint32_t i = 0; i < num_dimensions; i++) {
         dimensions[i] = reverse_endian(dimensions[i]);
     }
 
@@ -48,7 +47,6 @@ double **load_data_file(const char *filename) {
     uint32_t rows = dimensions[1];
     uint32_t cols = dimensions[2];
 
-    // Allocate memory for image data
     double **image_data = (double **)malloc(num_images * sizeof(double *));
     if (!image_data) {
         perror("Memory allocation failed for image data");
@@ -69,10 +67,21 @@ double **load_data_file(const char *filename) {
         }
     }
 
-    // Read the image data
+    uint8_t *raw_image_buffer = (uint8_t *)malloc(rows * cols * sizeof(uint8_t));
+    if (!raw_image_buffer) {
+        perror("Memory allocation failed for raw image buffer");
+        for (uint32_t j = 0; j < num_images; j++) {
+             free(image_data[j]);
+        }
+        free(image_data);
+        fclose(file);
+        return NULL;
+    }
+
     for (uint32_t i = 0; i < num_images; i++) {
-        if (fread(image_data[i], sizeof(uint8_t), rows * cols, file) != rows * cols) {
+        if (fread(raw_image_buffer, sizeof(uint8_t), rows * cols, file) != rows * cols) {
             perror("Failed to read image data");
+            free(raw_image_buffer);
             for (uint32_t j = 0; j <= i; j++) {
                 free(image_data[j]);
             }
@@ -81,12 +90,12 @@ double **load_data_file(const char *filename) {
             return NULL;
         }
 
-        // Normalize pixel values to [0, 1]
         for (uint32_t j = 0; j < rows * cols; j++) {
-            image_data[i][j] /= 255.0;
+            image_data[i][j] = (double)raw_image_buffer[j] / 255.0;
         }
     }
 
+    free(raw_image_buffer);
     fclose(file);
     return image_data;
 }

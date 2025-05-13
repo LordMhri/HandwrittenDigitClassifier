@@ -1,16 +1,16 @@
 #include "../include/network.h"
-#include "../include/trainer.h"
+#include "../include/trainer.h" 
 #include "../include/data_loader.h"
-#include "../include/utils.h"
+#include "../include/utils.h" 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 
-#define BATCH_SIZE 32
-#define LEARNING_RATE 0.0001
-#define EPOCHS 10
-#define DATASET_SIZE 60000
+#define BATCH_SIZE 32 
+#define LEARNING_RATE 0.0001 
+#define EPOCHS 10 
+#define DATASET_SIZE 15 
 
 int main() {
 
@@ -18,6 +18,7 @@ int main() {
     const char *inputLabelDataPath = "../dataset/train-labels.idx1-ubyte";
 
 
+    // Load data
     double **inputTrainData = load_data_file(inputTrainDataPath);
     if (inputTrainData == NULL) {
         fprintf(stderr, "Failed to load training image data. Exiting.\n");
@@ -36,78 +37,66 @@ int main() {
 
     printf("Data loading successful.\n");
 
-    
-    // srand(time(NULL));
-    // shuffle((uint8_t **)inputTrainData, inputLabelData, DATASET_SIZE);
-    
-    // Network Initialization
+    // Initialize network struct
     Network network = {0};
-    if (network_init(&network, 28 * 28, 128, 10) != 0) { 
-            fprintf(stderr, "Network initialization failed. Exiting.\n");
-            // Free data before exiting
-            for (int i = 0; i < DATASET_SIZE; i++) {
-                    free(inputTrainData[i]);
-                }
-                free(inputTrainData);
-                free(inputLabelData);
-                return EXIT_FAILURE;
-    }
-    printf("Network initialized.\n");
-    
-    // Trainer Initialization
-    Trainer trainer = {0};
-    if (trainer_init(&trainer, &network) == NULL) {
-            fprintf(stderr, "Trainer initialization failed. Exiting.\n");
-            // Free network and data before exiting
-            network_free(&network);
-            for (int i = 0; i < DATASET_SIZE; i++) {
-                    free(inputTrainData[i]);
-                }
-        free(inputTrainData);
-        free(inputLabelData);
+
+
+    if (network_init(&network,28*28,512,128,10) != 0 )
+    {
+        perror("An error has occurred while initializing the network");
+        perror("Aborting...");
+        network_free(&network); 
         return EXIT_FAILURE;
     }
-    printf("Trainer initialized.\n");
-    
-    // Model Training
-    printf("Starting training...\n");
-    trainer_Mini_Batch_train(&trainer, &network, inputTrainData, inputLabelData, EPOCHS, BATCH_SIZE, LEARNING_RATE, DATASET_SIZE);
-    printf("Training complete.\n");
-    
-    
-    // Free resources
-    printf("Freeing resources...\n");
-    network_free(&network);
-    trainer_free(&trainer);
-    
-    // Free input data
-    for (int i = 0; i < DATASET_SIZE; i++) {
-            free(inputTrainData[i]);
+
+    printf("Network initialized successfully.\n");
+
+
+
+    for (int img_idx = 0; img_idx < DATASET_SIZE; img_idx++) {
+
+        network_predict(&network, inputTrainData[img_idx]);
+
+        // Print the prediction (output layer values)
+        printf("Prediction for image %d (output layer values):\n", img_idx);
+        for (int j = 0; j < network.output_neurons_num; j++) {
+            printf("%.4f ", network.output_neurons[j]);
         }
-        free(inputTrainData);
-        free(inputLabelData);
-        printf("Resources freed.\n");
-        
-        printf("Program finished.\n");
-        return EXIT_SUCCESS;
+        printf("\n");
+
+        // Print the actual correct number
+        printf("Actual number: %d\n", inputLabelData[img_idx]);
+
+        // this is purely because i love seeing the data come to life
+        // REMINDER: should be commented out on production
+        printf("Image data visualization:\n");
+        for (int row = 0; row < 28; row++) {
+            for (int col = 0; col < 28; col++) {
+                // Flattening a 2D matrix into a 1D array
+                double pixel = inputTrainData[img_idx][row * 28 + col];
+                if (pixel > 0.01) { 
+                    printf("\e[1;34m%.2f\e[0m ", pixel); 
+                } else {
+                    printf("\e[1;31m%.2f\e[0m ", pixel);
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
     }
-    
-    
-    // int num_to_load = dataset_size;
-    // for (int img_idx = 0; img_idx < num_to_load; img_idx++) {
-        //     printf("Number is %d\n", inputLabelData[img_idx]);
-    //     // Loop through the rows and columns of each image
-    //     for (int row = 0; row < 28; row++) {
-    //         for (int col = 0; col < 28; col++) {
-        //             // Flattening a 2D matrix into a 1D array
-        //             double pixel = normalized_data[img_idx][row * 28 + col];
-        //             if (pixel > 0) {
-            //                 printf("\e[1;31m%.2f\e[0m ", pixel);
-    //             } else {
-        //                 printf("%.2f ", pixel);
-        //             }
-        //         }
-        //         printf("\n");
-        //     }
-        //     printf("\n");
-        // }
+
+
+    // Free the input data
+    for (int i = 0; i < DATASET_SIZE; i++) {
+        free(inputTrainData[i]);
+    }
+    free(inputTrainData);
+    free(inputLabelData);
+
+    // Free the network memory
+    network_free(&network);
+
+
+
+    return EXIT_SUCCESS;
+}

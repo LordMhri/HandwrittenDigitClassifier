@@ -4,25 +4,38 @@
 
 typedef struct Network
 {
-    double *hiddenNeuron;
-    double *outputNeuron;
+    //no array of doubles for the first layer because it is the input layer
+    double *first_hidden_neurons;
+    double *second_hidden_neurons;
+    double *output_neurons;
 
-    double *weights_hidden;
-    double *bias_hidden;
-    double *weights_output;
-    double *bias_output;
+   //input_to_first_transition
+   double *input_to_first_weight;
+   double *input_to_first_bias;
+   
+   //first_to_second_transition
+   
+   double *first_to_second_weight;
+   double *first_to_second_bias;
+   
+   
+   //second_to_final_transition
+   double *second_to_output_weight;
+   double *second_to_output_bias;
 
-    int neurons_hidden;
+
+    //number of neurons for each layer    
+    int second_hidden_neuron_num;
+    int first_hidden_neuron_num;    
     int neurons_input;
-    int neurons_output;
+    int output_neurons_num;
 
 } Network;
 
-void network_init(Network* net,int neurons_input,int neurons_hidden,int neurons_output);
+int network_init(Network *network, int input_neurons_num,int first_hidden_num,int second_hidden_num,int output_neurons_num);
 void network_free(Network *net);
 void network_predict(Network *net,double *inputs);
 
 
 
-//too many parameters , will do for now
 #endif
