@@ -8,16 +8,17 @@
 typedef struct idx_header
 {
     uint32_t magic_number;
-    uint32_t num_items;
-    uint32_t num_dims;
-    uint32_t dim_sizes[3];
+    uint32_t dimensions[];
 } idx_header ;
 
-//load an idx file and return a 2D array of ubyte elements
-uint8_t **load_data_file(const char *filename);
+// Loads an IDX image file into memory
+double **load_data_file(const char *filename);
 
-//convert high endian to low endian and vice versa
+// Converts a 32-bit unsigned integer from big-endian to little-endian byte order
+// (or vice versa, depending on system architecture).
 uint32_t reverse_endian(uint32_t value);
 
+// Loads an IDX label file and returns a 1D array of unsigned byte elements (labels).
 uint8_t *load_text_file(const char *filename);
+
 #endif
