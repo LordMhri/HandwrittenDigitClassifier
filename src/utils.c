@@ -18,6 +18,28 @@ double** normalize_image_data(uint8_t **inputs, int number_of_images) {
 
     return normalized_data; 
 }
+void matrix_multiply(double *result, double *first_matrix, double *second_matrix, int m, int n, int p) {
+    for (int i = 0; i < m * p; i++) {
+        result[i] = 0.0;
+    }
+
+    
+    for (int i = 0; i < m; i++) { 
+        for (int j = 0; j < p; j++) { 
+            for (int k = 0; k < n; k++) { 
+                result[i * p + j] += first_matrix[i * n + k] * second_matrix[k * p + j];
+            }
+        }
+    }
+}
+
+void matrix_addition(double *result, double *matrix_a, double *matrix_b, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            result[i * cols + j] = matrix_a[i * cols + j] + matrix_b[i * cols + j];
+        }
+    }
+}
 
 //he_intialization of random weights
 void he_init(double *weights,int neurons_output,int neurons_input) {

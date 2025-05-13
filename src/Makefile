@@ -8,7 +8,7 @@ CFLAGS = -I./include -Wall -Wextra -std=c17 -g
 LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lopenblas -lm
 
 # Source files
-SRCS = main.c data_loader.c network.c utils.c trainer.c
+SRCS = main.c data_loader.c network.c utils.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
