@@ -33,8 +33,8 @@ typedef struct Network
 } Network;
 
 int network_init(Network *network, int input_neurons_num,int first_hidden_num,int second_hidden_num,int output_neurons_num);
+uint8_t network_predict(Network *net); //value of the predicted number
 void network_free(Network *net);
-void network_predict(Network *net,double *inputs);
 
 
 

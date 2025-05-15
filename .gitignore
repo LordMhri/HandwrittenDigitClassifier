@@ -1,3 +1,7 @@
 dataset/
+CMakeLists.txt
 *.o
+.idea/
+.vscode/
 *.bin
+tests/

@@ -1,10 +1,8 @@
 #include "../include/network.h"
 #include "../include/utils.h"
 #include <stdlib.h>
-#include <math.h>
 #include <stdio.h>
-#include <time.h>
-#include <openblas/cblas.h>
+
 
 
 
@@ -90,51 +88,22 @@ int network_init(Network *network, int input_neurons_num,int first_hidden_num,in
     return 0;
 }
 
-//This is the feedforward part of the network
-void network_predict(Network *network, double *inputs) {
-    // From input to first hidden layer
-    matrix_multiply(network->first_hidden_neurons, 
-                    inputs, 
-                    network->input_to_first_weight, 
-                    1, 
-                    network->neurons_input, 
-                    network->first_hidden_neuron_num);
+//This is the final part of the network where we
+//have the probabilites in the network->output_neurons
+//we just have to pick the maximum one from them
+// and have the index of that as our class
+uint8_t network_predict(Network *network) {
+    uint8_t predicted = 0; //the predicted value will be a number from 0 to 10
+    double curr_max = network->output_neurons[0];
 
-    // Add biases to the first hidden layer and apply ReLU activation
-    for (int i = 0; i < network->first_hidden_neuron_num; i++) {
-        network->first_hidden_neurons[i] += network->input_to_first_bias[i];
-        network->first_hidden_neurons[i] = ReLU(network->first_hidden_neurons[i]);
+    for (int i = 0; i < network->output_neurons_num; ++i) {
+        if (network->output_neurons[i] > curr_max){
+            curr_max = network->output_neurons[i];
+            predicted = i;
+        }
     }
 
-    // From first hidden layer to second hidden layer
-    matrix_multiply(network->second_hidden_neurons, 
-                    network->first_hidden_neurons, 
-                    network->first_to_second_weight, 
-                    1, 
-                    network->first_hidden_neuron_num, 
-                    network->second_hidden_neuron_num);
-
-    // Add biases to the second hidden layer and apply ReLU activation
-    for (int i = 0; i < network->second_hidden_neuron_num; i++) {
-        network->second_hidden_neurons[i] += network->first_to_second_bias[i];
-        network->second_hidden_neurons[i] = ReLU(network->second_hidden_neurons[i]);
-    }
-
-    // From second hidden layer to output layer
-    matrix_multiply(network->output_neurons, 
-                    network->second_hidden_neurons, 
-                    network->second_to_output_weight, 
-                    1, 
-                    network->second_hidden_neuron_num, 
-                    network->output_neurons_num);
-
-    // Add biases to the output layer
-    for (int i = 0; i < network->output_neurons_num; i++) {
-        network->output_neurons[i] += network->second_to_output_bias[i];
-    }
-
-    // Apply softmax activation to the output layer
-    softmax(network->output_neurons, network->output_neurons_num);
+    return predicted;
 }
 
 

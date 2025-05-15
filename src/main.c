@@ -53,29 +53,31 @@ int main() {
 
 
 
-    for (int img_idx = 0; img_idx < DATASET_SIZE; img_idx++) {
+    Trainer *trainer = trainer_init(&network,LEARNING_RATE,EPOCHS,
+                 BATCH_SIZE,DATASET_SIZE,
+                 inputTrainData,inputLabelData);
 
-        network_predict(&network, inputTrainData[img_idx]);
 
-        // Print the prediction (output layer values)
-        printf("Prediction for image %d (output layer values):\n", img_idx);
+    for (int i = 0; i < DATASET_SIZE; ++i) {
+        forward_propagation(&network,inputTrainData[i]);
+        uint8_t answer = network_predict(&network);
+
+        printf("Prediction for image %d (output layer values):\n", i);
         for (int j = 0; j < network.output_neurons_num; j++) {
             printf("%.4f ", network.output_neurons[j]);
         }
         printf("\n");
 
+        printf("Predicted number is: %i\n",answer);
         // Print the actual correct number
-        printf("Actual number: %d\n", inputLabelData[img_idx]);
+        printf("Actual number: %d\n", inputLabelData[i]);
 
-        // this is purely because i love seeing the data come to life
-        // REMINDER: should be commented out on production
-        printf("Image data visualization:\n");
         for (int row = 0; row < 28; row++) {
             for (int col = 0; col < 28; col++) {
                 // Flattening a 2D matrix into a 1D array
-                double pixel = inputTrainData[img_idx][row * 28 + col];
-                if (pixel > 0.01) { 
-                    printf("\e[1;34m%.2f\e[0m ", pixel); 
+                double pixel = inputTrainData[i][row * 28 + col];
+                if (pixel > 0.01) {
+                    printf("\e[1;34m%.2f\e[0m ", pixel);
                 } else {
                     printf("\e[1;31m%.2f\e[0m ", pixel);
                 }
@@ -83,7 +85,42 @@ int main() {
             printf("\n");
         }
         printf("\n");
+
+//        printf("answer is %i \n",answer);
     }
+
+
+//    for (int img_idx = 0; img_idx < DATASET_SIZE; img_idx++) {
+//
+//        network_predict(&network);
+//
+//        // Print the prediction (output layer values)
+//        printf("Prediction for image %d (output layer values):\n", img_idx);
+//        for (int j = 0; j < network.output_neurons_num; j++) {
+//            printf("%.4f ", network.output_neurons[j]);
+//        }
+//        printf("\n");
+//
+//        // Print the actual correct number
+//        printf("Actual number: %d\n", inputLabelData[img_idx]);
+//
+//        // this is purely because i love seeing the data come to life
+//        // REMINDER: should be commented out on production
+//        printf("Image data visualization:\n");
+//        for (int row = 0; row < 28; row++) {
+//            for (int col = 0; col < 28; col++) {
+//                // Flattening a 2D matrix into a 1D array
+//                double pixel = inputTrainData[img_idx][row * 28 + col];
+//                if (pixel > 0.01) {
+//                    printf("\e[1;34m%.2f\e[0m ", pixel);
+//                } else {
+//                    printf("\e[1;31m%.2f\e[0m ", pixel);
+//                }
+//            }
+//            printf("\n");
+//        }
+//        printf("\n");
+//    }
 
 
     // Free the input data
