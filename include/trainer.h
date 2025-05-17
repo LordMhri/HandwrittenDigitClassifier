@@ -43,10 +43,10 @@ Trainer* trainer_init(Network *network,double learning_rate,int epochs,int batch
                       int dataset_size,double **train_data,uint8_t* train_labels);
 
 
-//void backpropagation(Network *network, uint8_t actual_label, Trainer *trainer, double *inputs);
+void backpropagate(Trainer *trainer,Network *network,double *inputs,uint8_t label);
 
 void forward_propagation(Network *network,double *input);
-//void trainer_free(Trainer *trainer);
+void trainer_free(Trainer *trainer);
 //void trainer_Mini_Batch_train(Trainer *trainer, Network *network, double **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t  dataset_size);
 void apply_gradients(Trainer *trainer, Network *network, double learning_rate, uint32_t batch_size);
 #endif

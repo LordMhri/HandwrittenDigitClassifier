@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 
-void softmax(double *input, int length);
+void softmax(double *input_z,double *output, int length);
 
 void clip_gradients(double *gradients, int size, double threshold);
 
@@ -12,6 +12,8 @@ void he_init(double *weights,int neurons_output,int neurons_input);
 double** normalize_image_data(uint8_t **inputs,int number_of_images);
 
 void matrix_multiply(double *result, double *first_matrix,double *second_matrix,int m,int n,int p);
+
+void matrix_addition(double *result, double *matrix_a, double *matrix_b, int rows, int cols);
 
 void shuffle(double **inputs, uint8_t *output, int dataset_size);
 
@@ -27,6 +29,14 @@ double ReLU(double x);
 
 double ReLU_Prime(double x);
 
+void matrix_transpose_vector_multiply(double *result, double *matrix,
+double *vector,
+int num_rows,int num_cols);
+
+//size not mentioned here
+//because i know the size cant get bigger than 10
+//but better to have a size of class for clarity
+void one_hot_encode(uint8_t label,uint8_t* y_true);
 
 
 #endif

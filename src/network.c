@@ -81,6 +81,10 @@ int network_init(Network *network, int input_neurons_num,int first_hidden_num,in
     network->second_hidden_neurons = calloc(second_hidden_num,sizeof(double));
     network->output_neurons = calloc(output_neurons_num,sizeof(double));
 
+    network->first_hidden_pre_activation_values = calloc(first_hidden_num,sizeof(double));
+    network->second_hidden_pre_activation_values = calloc(second_hidden_num,sizeof(double));
+    network->output_pre_activation_values = calloc(output_neurons_num,sizeof(double));
+
     he_init(network->input_to_first_weight,input_neurons_num,first_hidden_num);
     he_init(network->first_to_second_weight,first_hidden_num,second_hidden_num);
     he_init(network->second_to_output_weight,second_hidden_num,output_neurons_num);
@@ -109,6 +113,9 @@ uint8_t network_predict(Network *network) {
 
 //freeing the memory when done with the program
 void network_free(Network *network) {
+    free(network->first_hidden_pre_activation_values);
+    free(network->second_hidden_pre_activation_values);
+    free(network->output_pre_activation_values);
     free(network->input_to_first_bias);
     free(network->input_to_first_weight);
     free(network->first_to_second_bias);

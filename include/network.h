@@ -9,6 +9,11 @@ typedef struct Network
     double *second_hidden_neurons;
     double *output_neurons;
 
+    //these are the z-values(the preactivated values ) needed for backprop
+    double *first_hidden_pre_activation_values;
+    double *second_hidden_pre_activation_values;
+    double *output_pre_activation_values;
+
    //input_to_first_transition
    double *input_to_first_weight;
    double *input_to_first_bias;

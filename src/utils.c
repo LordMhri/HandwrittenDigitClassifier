@@ -41,6 +41,26 @@ void matrix_addition(double *result, double *matrix_a, double *matrix_b, int row
     }
 }
 
+void matrix_transpose_vector_multiply(double *result, double *matrix,
+                                      double *vector,
+                                      int num_rows,int num_cols) {
+    for (int i = 0; i < num_rows; ++i) {
+        result[i] = 0;
+        for (int j = 0; j < num_cols; ++j) {
+            result[i] += matrix[j * num_cols + i] * vector[j];
+        }
+    }
+
+}
+
+void one_hot_encode(uint8_t label,uint8_t* y_true) {
+    for(int i = 0; i < 10; i++) {
+        y_true[i] = 0;
+    }
+
+    y_true[label] = 1;
+}
+
 //he_intialization of random weights
 void he_init(double *weights,int neurons_output,int neurons_input) {
     double stddev = sqrt(2.0/neurons_input);
@@ -51,24 +71,24 @@ void he_init(double *weights,int neurons_output,int neurons_input) {
 }
 
 
-void softmax(double *input, int length) {
+void softmax(double *input_z, double *output, int length) {
 
     if (length <= 0) return;
-    double max_input = input[0];
+    double max_input = input_z[0];
     for (int i = 1; i < length; i++) {
-        if (input[i] > max_input) {
-            max_input = input[i];
+        if (input_z[i] > max_input) {
+            max_input = input_z[i];
         }
     }
 
     double sum = 0.0;
     for (int i = 0; i < length; i++) {
-        input[i] = exp(input[i] - max_input);
-        sum += input[i];
+        output[i] = exp(input_z[i] - max_input);
+        sum += output[i];
     }
 
     for (int i = 0; i < length; i++) {
-        input[i] /= sum;
+        output[i] /= sum;
     }
 }   
 
