@@ -3,7 +3,7 @@
 #include "../include/network.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
+#include <string.h>
 
 Trainer* trainer_init(Network *network,double learning_rate,int epochs,int batch_size,
                       int dataset_size,double **train_data,uint8_t* train_labels)
@@ -43,176 +43,158 @@ Trainer* trainer_init(Network *network,double learning_rate,int epochs,int batch
 
 
 double ReLU_Prime(double x) {
-    return x > 0 ? 1 : 0;
+    return x > 0 ? 1 : 0.01;//Leaky ReLU because of vanishing gradients
 }
 
 
-void forward_propagation(Network *network,double *inputs) {
-    printf("  Entering forward_propagation\n");
+void forward_propagation(Network *network, double *inputs) {
 
-    printf("  Starting Layer 1 forward pass\n");
-    matrix_multiply(network->first_hidden_pre_activation_values,
-                    inputs,
-                    network->input_to_first_weight,
-                    1,
-                    network->neurons_input,
-                    network->first_hidden_neuron_num);
+    matrix_multiply(
+            network->first_hidden_pre_activation_values,
+            inputs,
+            network->input_to_first_weight,
+            1,
+            network->neurons_input,
+            network->first_hidden_neuron_num
+    );
 
-    matrix_addition(network->first_hidden_pre_activation_values,
-                    network->first_hidden_pre_activation_values,
-                    network->input_to_first_bias,
-                    1,
-                    network->first_hidden_neuron_num
-                    );
+    matrix_addition(
+            network->first_hidden_pre_activation_values,
+            network->first_hidden_pre_activation_values,
+            network->input_to_first_bias,
+            1,
+            network->first_hidden_neuron_num
+    );
 
-    // apply ReLU to each neuron
+
     for (int i = 0; i < network->first_hidden_neuron_num; i++) {
         network->first_hidden_neurons[i] = ReLU(network->first_hidden_pre_activation_values[i]);
     }
-    printf("  Finished Layer 1 forward pass\n");
 
-    printf("  Starting Layer 2 forward pass\n");
-    // From first hidden layer to second hidden layer
-    matrix_multiply(network->second_hidden_pre_activation_values,
-                    network->first_hidden_neurons,
-                    network->first_to_second_weight,
-                    1,
-                    network->first_hidden_neuron_num,
-                    network->second_hidden_neuron_num);
 
-    matrix_addition(network->second_hidden_pre_activation_values,
-                    network->first_hidden_neurons,
-                    network->first_to_second_bias,
-                    1,
-                    network->second_hidden_neuron_num
+    matrix_multiply(
+            network->second_hidden_pre_activation_values,
+            network->first_hidden_neurons,
+            network->first_to_second_weight,
+            1,
+            network->first_hidden_neuron_num,
+            network->second_hidden_neuron_num
     );
 
+    matrix_addition(
+            network->second_hidden_pre_activation_values,
+            network->second_hidden_pre_activation_values,
+            network->first_to_second_bias,
+            1,
+            network->second_hidden_neuron_num
+    );
 
-    // Add biases to the second hidden layer and apply ReLU activation
+    // Apply ReLU activation
     for (int i = 0; i < network->second_hidden_neuron_num; i++) {
         network->second_hidden_neurons[i] = ReLU(network->second_hidden_pre_activation_values[i]);
     }
-    printf("  Finished Layer 2 forward pass\n");
 
-    printf("  Starting Output Layer forward pass\n");
-    // From second hidden layer to output layer
-    matrix_multiply(network->output_pre_activation_values,
-                    network->second_hidden_neurons,
-                    network->second_to_output_weight,
-                    1,
-                    network->second_hidden_neuron_num,
-                    network->output_neurons_num);
-
-    matrix_addition(network->output_pre_activation_values,
-                    network->output_pre_activation_values,
-                    network->second_to_output_bias,
-                    1,
-                    network->output_neurons_num
+    matrix_multiply(
+            network->output_pre_activation_values,
+            network->second_hidden_neurons,
+            network->second_to_output_weight,
+            1,
+            network->second_hidden_neuron_num,
+            network->output_neurons_num
     );
 
-    // Add biases to the output layer
-    for (int i = 0; i < network->output_neurons_num; i++) {
-        network->output_neurons[i] = ReLU(network->output_pre_activation_values[i]);
+    matrix_addition(
+            network->output_pre_activation_values,
+            network->output_pre_activation_values,
+            network->second_to_output_bias,
+            1,
+            network->output_neurons_num
+    );
 
-    }
-    printf("  Finished Output Layer forward pass\n");
 
-    // Apply softmax activation to the output layer
-    softmax(network->output_pre_activation_values,network->output_neurons, network->output_neurons_num);
-    printf("  Exiting forward_propagation\n");
+    softmax(
+            network->output_pre_activation_values,
+            network->output_neurons,
+            network->output_neurons_num
+    );
 }
 
-void backpropagate(Trainer  *trainer,Network *network,double *inputs,uint8_t label) {
+void backpropagate(Trainer *trainer, Network *network, double *inputs, uint8_t label) {
+    // Output layer error
+    double *delta3 = calloc(network->output_neurons_num, sizeof(double));
+    uint8_t* one_hot_y = calloc(network->output_neurons_num, sizeof(uint8_t));
+    one_hot_encode(label, one_hot_y);
 
-
-    printf("Starting backprop");
-    //TODO: calloc checks all over this function
-    //calculate error caused by z3 which is the last layer
-    //basically trying to find the derivative of the cost function with respect to z3
-    double *delta3 = calloc(network->output_neurons_num,sizeof(double ));
-    printf("Allocating memory for delta3");
-
-    //uint8_t chosen because the values are guaranteed to be low
-    uint8_t* one_hot_y = calloc(network->output_neurons_num,sizeof(uint8_t));
-    one_hot_encode(label,one_hot_y);
-
-    //error caused by z3 is the difference between the predicted values
-    //and the one_hot encoded value
     for (int i = 0; i < network->output_neurons_num; ++i) {
-        delta3[i] = network->output_neurons[i] -one_hot_y[i];
+        delta3[i] = network->output_neurons[i] - one_hot_y[i];
     }
+    free(one_hot_y);
 
-    free(one_hot_y); //one_hot_y is no longer needed
-
+    // Output layer gradients
     for (int i = 0; i < network->output_neurons_num; ++i) {
         for (int j = 0; j < network->second_hidden_neuron_num; ++j) {
-            trainer->acc_grad_w3[i*network->second_hidden_neuron_num + j] += delta3[i] * network->second_hidden_neurons[j];
+            trainer->acc_grad_w3[i*network->second_hidden_neuron_num + j] +=
+                    delta3[i] * network->second_hidden_neurons[j];
         }
+        trainer->acc_grad_b3[i] += delta3[i];
     }
 
-    matrix_addition(trainer->acc_grad_w3,trainer->acc_grad_w3,delta3,network->output_neurons_num,1);
+    // Second hidden layer error
+    double *prop_error_2 = calloc(network->second_hidden_neuron_num, sizeof(double));
+    matrix_transpose_vector_multiply(prop_error_2,
+                                     network->second_to_output_weight,
+                                     delta3,
+                                     network->output_neurons_num,
+                                     network->second_hidden_neuron_num);
 
-    //weightin3^T * delta3
-    double  *prop_error_2 = calloc(network->second_hidden_neuron_num,sizeof(double));
-    printf("Allocating memory for prop_error_2");
-
-    matrix_transpose_vector_multiply(prop_error_2,network->second_to_output_weight,delta3,network->output_neurons_num,network->second_hidden_neuron_num);
-
-
-    double *delta2 = calloc(network->second_hidden_neuron_num,sizeof(double));
-    printf("Allocating memory for delta2");
-
+    double *delta2 = calloc(network->second_hidden_neuron_num, sizeof(double));
     for (int i = 0; i < network->second_hidden_neuron_num; i++) {
-        double relu_prime = ReLU_Prime(network->second_hidden_pre_activation_values[i]);
-        delta2[i] = prop_error_2[i] * relu_prime;
+        delta2[i] = prop_error_2[i] * ReLU_Prime(network->second_hidden_pre_activation_values[i]);
     }
     free(prop_error_2);
 
+    // Second hidden layer gradients
     for (int i = 0; i < network->second_hidden_neuron_num; ++i) {
         for (int j = 0; j < network->first_hidden_neuron_num; ++j) {
-            trainer->acc_grad_w2[i*network->first_hidden_neuron_num + j] = delta2[i] * network->first_hidden_neurons[j];
+            trainer->acc_grad_w2[i*network->first_hidden_neuron_num + j] +=
+                    delta2[i] * network->first_hidden_neurons[j];
         }
+        trainer->acc_grad_b2[i] += delta2[i];  // Fixed bias gradient
     }
 
-    matrix_addition(trainer->acc_grad_w2,trainer->acc_grad_w3,delta2,network->second_hidden_neuron_num,1);
-
-    double *prop_error_1 = calloc(network->first_hidden_neuron_num, sizeof(double ));
-    printf("Allocating memory for prop_error_1");
-
-
-    matrix_transpose_vector_multiply(prop_error_1,network->first_to_second_weight,delta2,network->second_hidden_neuron_num,network->first_hidden_neuron_num);
+    // First hidden layer error
+    double *prop_error_1 = calloc(network->first_hidden_neuron_num, sizeof(double));
+    matrix_transpose_vector_multiply(prop_error_1,
+                                     network->first_to_second_weight,
+                                     delta2,
+                                     network->second_hidden_neuron_num,
+                                     network->first_hidden_neuron_num);
 
     double *delta1 = calloc(network->first_hidden_neuron_num, sizeof(double));
-    printf("Allocating memory for delta1");
-
-
     for (int i = 0; i < network->first_hidden_neuron_num; i++) {
-        double relu_prime = ReLU_Prime(network->first_hidden_pre_activation_values[i]);
-        delta1[i] = prop_error_1[i] * relu_prime;
+        delta1[i] = prop_error_1[i] * ReLU_Prime(network->first_hidden_pre_activation_values[i]);
     }
     free(prop_error_1);
 
-
-
+    // First hidden layer gradients
     for (int i = 0; i < network->first_hidden_neuron_num; i++) {
         for (int j = 0; j < network->neurons_input; j++) {
             trainer->acc_grad_w1[i * network->neurons_input + j] += delta1[i] * inputs[j];
         }
+        trainer->acc_grad_b1[i] += delta1[i];
     }
 
-
-    matrix_addition(trainer->acc_grad_b1,
-                    trainer->acc_grad_b1,
-                    delta1,
-                    network->first_hidden_neuron_num,
-                    1);
-
+    // Gradient clipping
+    clip_gradients(trainer->acc_grad_w1, network->neurons_input * network->first_hidden_neuron_num, 1.0);
+    clip_gradients(trainer->acc_grad_w2, network->first_hidden_neuron_num * network->second_hidden_neuron_num, 1.0);
+    clip_gradients(trainer->acc_grad_w3, network->second_hidden_neuron_num * network->output_neurons_num, 1.0);
+    clip_gradients(trainer->acc_grad_b1, network->first_hidden_neuron_num, 1.0);
+    clip_gradients(trainer->acc_grad_b2, network->second_hidden_neuron_num, 1.0);
+    clip_gradients(trainer->acc_grad_b3, network->output_neurons_num, 1.0);
 
     free(delta1);
-
-    free(delta3);
     free(delta2);
-
+    free(delta3);
 }
 
 
@@ -220,7 +202,6 @@ void backpropagate(Trainer  *trainer,Network *network,double *inputs,uint8_t lab
 void apply_gradients(Trainer *trainer, Network *network, double learning_rate, uint32_t batch_size) {
     // Calculate the scaling factor (learning_rate / batch_size)
     double scale = learning_rate / batch_size;
-
     // --- Update Weights and Biases for Input -> First Hidden Layer (Layer 1) ---
 
     // Update Weights (W1)
@@ -291,7 +272,56 @@ void apply_gradients(Trainer *trainer, Network *network, double learning_rate, u
         // Reset the accumulated gradient for this parameter
         trainer->acc_grad_b3[i] = 0.0;
     }
+
+
 }
+
+void trainer_reset_gradients(Trainer *trainer) {
+    // Safety check
+    if (trainer == NULL || trainer->network == NULL) return;
+
+    // Reset weight gradients
+    if (trainer->acc_grad_w1 != NULL) {
+        memset(trainer->acc_grad_w1, 0,
+               trainer->network->neurons_input *
+               trainer->network->first_hidden_neuron_num *
+               sizeof(double));
+    }
+
+    if (trainer->acc_grad_w2 != NULL) {
+        memset(trainer->acc_grad_w2, 0,
+               trainer->network->first_hidden_neuron_num *
+               trainer->network->second_hidden_neuron_num *
+               sizeof(double));
+    }
+
+    if (trainer->acc_grad_w3 != NULL) {
+        memset(trainer->acc_grad_w3, 0,
+               trainer->network->second_hidden_neuron_num *
+               trainer->network->output_neurons_num *
+               sizeof(double));
+    }
+
+    // Reset bias gradients
+    if (trainer->acc_grad_b1 != NULL) {
+        memset(trainer->acc_grad_b1, 0,
+               trainer->network->first_hidden_neuron_num *
+               sizeof(double));
+    }
+
+    if (trainer->acc_grad_b2 != NULL) {
+        memset(trainer->acc_grad_b2, 0,
+               trainer->network->second_hidden_neuron_num *
+               sizeof(double));
+    }
+
+    if (trainer->acc_grad_b3 != NULL) {
+        memset(trainer->acc_grad_b3, 0,
+               trainer->network->output_neurons_num *
+               sizeof(double));
+    }
+}
+
 //
 //void trainer_Mini_Batch_train(Trainer *trainer, Network *network, double **input, uint8_t *output, uint8_t epoch, uint32_t batch_size, double learning_rate, uint32_t  dataset_size)
 //{

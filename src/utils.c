@@ -1,6 +1,30 @@
 #include "../include/utils.h"
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <string.h>
+
+#define M_PI 3.14159265358979323846
+
+
+void shuffle_data(double **data, uint8_t *labels, int n_samples) {
+    srand(time(NULL)); // Seed random number generator
+
+    for (int i = n_samples - 1; i > 0; i--) {
+        // Generate random index between 0 and i
+        int j = rand() % (i + 1);
+
+
+        double *temp_data = data[i];
+        data[i] = data[j];
+        data[j] = temp_data;
+
+        uint8_t temp_label = labels[i];
+        labels[i] = labels[j];
+        labels[j] = temp_label;
+    }
+}
+
 
 double** normalize_image_data(uint8_t **inputs, int number_of_images) {
 
@@ -18,6 +42,14 @@ double** normalize_image_data(uint8_t **inputs, int number_of_images) {
 
     return normalized_data; 
 }
+
+void clip_gradients(double *grad, int size, double threshold) {
+    for (int i = 0; i < size; i++) {
+        if (grad[i] > threshold) grad[i] = threshold;
+        if (grad[i] < -threshold) grad[i] = -threshold;
+    }
+}
+
 void matrix_multiply(double *result, double *first_matrix, double *second_matrix, int m, int n, int p) {
     for (int i = 0; i < m * p; i++) {
         result[i] = 0.0;
@@ -42,31 +74,31 @@ void matrix_addition(double *result, double *matrix_a, double *matrix_b, int row
 }
 
 void matrix_transpose_vector_multiply(double *result, double *matrix,
-                                      double *vector,
-                                      int num_rows,int num_cols) {
-    for (int i = 0; i < num_rows; ++i) {
-        result[i] = 0;
-        for (int j = 0; j < num_cols; ++j) {
-            result[i] += matrix[j * num_cols + i] * vector[j];
+                                      double *vector, int num_rows, int num_cols) {
+    for (int col = 0; col < num_cols; col++) {
+        result[col] = 0.0;
+        for (int row = 0; row < num_rows; row++) {
+            result[col] += matrix[row * num_cols + col] * vector[row];
         }
     }
-
 }
 
-void one_hot_encode(uint8_t label,uint8_t* y_true) {
-    for(int i = 0; i < 10; i++) {
-        y_true[i] = 0;
-    }
 
-    y_true[label] = 1;
+void one_hot_encode(uint8_t label, uint8_t *array) {
+    memset(array, 0, 10 * sizeof(uint8_t));
+    array[label] = 1;
 }
 
 //he_intialization of random weights
-void he_init(double *weights,int neurons_output,int neurons_input) {
-    double stddev = sqrt(2.0/neurons_input);
-    for (int i= 0; i < neurons_input*neurons_output; i++)
-    {
-        weights[i] = (double) rand() / RAND_MAX * stddev * 2 - stddev;
+void he_init(double *weights, int neurons_output, int neurons_input) {
+    double stddev = sqrt(2.0 / neurons_input);
+    for (int i = 0; i < neurons_input * neurons_output; i++) {
+        //new box-muller transform for gauss distribution
+        double u1 = (double)rand() / RAND_MAX;
+        double u2 = (double)rand() / RAND_MAX;
+        double z = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+
+        weights[i] = z * stddev; // Proper zero-mean Gaussian
     }
 }
 
@@ -90,10 +122,10 @@ void softmax(double *input_z, double *output, int length) {
     for (int i = 0; i < length; i++) {
         output[i] /= sum;
     }
-}   
+}
 
 double ReLU(double x) {
-    return x > 0 ? x : 0;
+    return (x > 0) ? x : 0.01 * x;  // Leaky ReLU
 }
 
 double** get_batch_2D(double **input, int batch_size, int batch_index) {

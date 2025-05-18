@@ -9,6 +9,33 @@ uint32_t reverse_endian(uint32_t value) {
            ((value & 0xFF000000) >> 24);
 }
 
+void save_sample_image(const char* filename, double* image) {
+    FILE* file = fopen(filename, "w");
+    if (!file) {
+        perror("Failed to open file");
+        return;
+    }
+
+    fprintf(file, "double input_5[784] = {\n");
+    for (int row = 0; row < 28; row++) {
+        fprintf(file, "    ");
+        for (int col = 0; col < 28; col++) {
+            fprintf(file, "%.4f", image[row * 28 + col]);
+            // Add a comment here
+            fprintf(file, " // [%2d, %2d]", row, col);
+            if (row != 27 || col != 27) {
+                fprintf(file, ", ");
+            }
+            if (col == 27 && row != 27) {
+                fprintf(file, "\n");
+            }
+        }
+        fprintf(file, "\n"); // Add a newline after each row's comments
+    }
+    fprintf(file, "};\n");
+    fclose(file);
+}
+
 double **load_data_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
