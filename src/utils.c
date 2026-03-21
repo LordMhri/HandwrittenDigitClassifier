@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 void save_network_to_json(struct Network *network, const char *filename) {
     FILE *file = fopen(filename, "w");
     if (!file) {
@@ -90,12 +94,18 @@ void matrix_addition(double *result, double *matrix_a, double *matrix_b, int row
     }
 }
 
-//he_intialization of random weights
-void he_init(double *weights,int neurons_output,int neurons_input) {
-    double stddev = sqrt(2.0/neurons_input);
-    for (int i= 0; i < neurons_input*neurons_output; i++)
-    {
-        weights[i] = (double) rand() / RAND_MAX * stddev * 2 - stddev;
+// Box-Muller transform: generates a standard normal random number
+static double rand_normal() {
+    double u1 = ((double) rand() + 1.0) / ((double) RAND_MAX + 1.0); // (0, 1]
+    double u2 = ((double) rand() + 1.0) / ((double) RAND_MAX + 1.0);
+    return sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+}
+
+// He initialization with proper Gaussian distribution: N(0, sqrt(2/fan_in))
+void he_init(double *weights, int neurons_output, int neurons_input) {
+    double stddev = sqrt(2.0 / neurons_input);
+    for (int i = 0; i < neurons_input * neurons_output; i++) {
+        weights[i] = rand_normal() * stddev;
     }
 }
 

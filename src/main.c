@@ -7,9 +7,9 @@
 #include <time.h>
 
 
-#define BATCH_SIZE 64 
-#define LEARNING_RATE 0.01 
-#define EPOCHS 15 
+#define BATCH_SIZE 32 
+#define LEARNING_RATE 0.001 
+#define EPOCHS 25 
 #define DATASET_SIZE 60000 
 #define INPUT_SIZE 784
 #define OUTPUT_SIZE 10
@@ -43,8 +43,8 @@ int main() {
     printf("Dataset loaded successfully.\n");
 
     // Define the network architecture
-    // 784 inputs -> 128 hidden -> 64 hidden -> 10 output
-    int layer_sizes[] = {INPUT_SIZE, 128, 64, OUTPUT_SIZE};
+    // 784 inputs -> 256 hidden -> 128 hidden -> 10 output
+    int layer_sizes[] = {INPUT_SIZE, 256, 128, OUTPUT_SIZE};
     int num_layers = sizeof(layer_sizes) / sizeof(layer_sizes[0]);
 
     Network network = {0};

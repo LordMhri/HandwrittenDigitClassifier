@@ -12,6 +12,21 @@ A high-performance Multi-Layer Perceptron (MLP) implemented in C. This project f
 - **Optimized Training**: Mini-batch Gradient Descent with pre-allocated delta buffers for high-speed backpropagation.
 - **Portability**: Exports final weights and biases to `model_weights.json` for instant use in JavaScript/Web applications.
 - **Performance**: Trained on the full 60,000 MNIST image set with high convergence stability.
+- **Web Interface Improvements**: 
+  - **Center-of-Mass Centering**: Automatically centers the drawn digit to match MNIST training distribution.
+  - **Robust Grayscale**: Uses luminance-weighted averaging for better grayscale extraction.
+  - **Auto-Scaling**: Fits drawn digits into the 20x28-in-28x28 format expected by the model.
+
+---
+
+## Web Interface Image Pipeline
+
+The web application (`web/main.js`) now includes a sophisticated preprocessing pipeline to ensure high accuracy for user-drawn digits:
+
+1. **Bounding Box Detection**: Crops the 280x280 canvas to the exact bounds of the drawn digit.
+2. **20x20 Rescaling**: Fits the digit into a 20x20 box (preserving aspect ratio) while applying high-quality interpolation.
+3. **Center-of-Mass Alignment**: Calculates the center-of-mass of the scaled digit and translates it so it sits at the (14, 14) center of a 28x28 frame.
+4. **Luminance Normalization**: Converts RGB data to grayscale using standard luminance weights before feeding to the neural network.
 
 ---
 
