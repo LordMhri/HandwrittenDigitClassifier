@@ -27,6 +27,7 @@ double ReLU(double x);
 
 double ReLU_Prime(double x);
 
-
+struct Network;
+void save_network_to_json(struct Network *net, const char *filename);
 
 #endif

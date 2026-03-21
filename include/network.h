@@ -4,35 +4,21 @@
 
 typedef struct Network
 {
-    //no array of doubles for the first layer because it is the input layer
-    double *first_hidden_neurons;
-    double *second_hidden_neurons;
-    double *output_neurons;
+    int num_layers;         // Total number of layers (input + hidden + output)
+    int *layer_sizes;       // Number of neurons in each layer
 
-   //input_to_first_transition
-   double *input_to_first_weight;
-   double *input_to_first_bias;
-   
-   //first_to_second_transition
-   
-   double *first_to_second_weight;
-   double *first_to_second_bias;
-   
-   
-   //second_to_final_transition
-   double *second_to_output_weight;
-   double *second_to_output_bias;
+    // neurons[i] is the (i+1)-th layer. Input layer (layer 0) is not stored.
+    double **neurons;
 
-
-    //number of neurons for each layer    
-    int second_hidden_neuron_num;
-    int first_hidden_neuron_num;    
-    int neurons_input;
-    int output_neurons_num;
+    // weights[i] connects layer i to layer i+1
+    double **weights;
+    
+    // biases[i] is for layer i+1
+    double **biases;
 
 } Network;
 
-int network_init(Network *network, int input_neurons_num,int first_hidden_num,int second_hidden_num,int output_neurons_num);
+int network_init(Network *network, int num_layers, int *layer_sizes);
 uint8_t network_predict(Network *net); //value of the predicted number
 void network_free(Network *net);
 

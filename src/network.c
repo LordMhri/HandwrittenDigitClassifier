@@ -6,99 +6,78 @@
 
 
 
-int network_init(Network *network, int input_neurons_num,int first_hidden_num,int second_hidden_num,int output_neurons_num) { 
+int network_init(Network *network, int num_layers, int *layer_sizes) { 
 
-    //Specifying the number of neurons in each layer
-    network->neurons_input = input_neurons_num;
-    network->first_hidden_neuron_num = first_hidden_num;
-    network->second_hidden_neuron_num = second_hidden_num;
-    network->output_neurons_num = output_neurons_num;
-
-
-    //allocate space for the biases in the hidden layers
-    network->input_to_first_bias = calloc(first_hidden_num ,sizeof(double));
-    if(!network->input_to_first_bias) {
-        perror("Error allocating memory for  input to first bias");
-        return -1; // -1 for error
+    network->num_layers = num_layers;
+    network->layer_sizes = malloc(num_layers * sizeof(int));
+    if (!network->layer_sizes) {
+        perror("Error allocating memory for layer_sizes");
+        return -1;
     }
 
-    
-    network->first_to_second_bias = calloc(second_hidden_num ,sizeof(double));
-    if(!network->first_to_second_bias) {
-        perror("Error allocating memory for first to second bias");
-        free(network->input_to_first_bias);
-        return -1; // -1 for error
+    for (int i = 0; i < num_layers; i++) {
+        network->layer_sizes[i] = layer_sizes[i];
     }
 
-    network->second_to_output_bias = calloc(output_neurons_num   ,sizeof(double));
-    if(!network->second_to_output_bias) {
-        perror("Error allocating memory for second to final bias");
-        free(network->input_to_first_bias);
-        free(network->first_to_second_bias);
-        return -1; // -1 for error
-    }
-    
+    // Allocate space for neurons, weights, and biases arrays
+    // num_layers - 1 represents the transitions between layers
+    network->neurons = calloc(num_layers - 1, sizeof(double *));
+    network->weights = calloc(num_layers - 1, sizeof(double *));
+    network->biases = calloc(num_layers - 1, sizeof(double *));
 
-    //allocate space for the weights
-    network->input_to_first_weight = calloc(input_neurons_num * first_hidden_num ,sizeof(double));
-    if(!network->input_to_first_weight) {
-        perror("Error allocating memory for input to first weight");
-        free(network->input_to_first_bias);
-        free(network->first_to_second_bias);
-        free(network->second_to_output_bias);
-        return -1; // -1 for error
+    if (!network->neurons || !network->weights || !network->biases) {
+        perror("Error allocating memory for network arrays");
+        return -1;
     }
 
+    for (int i = 0; i < num_layers - 1; i++) {
+        int input_size = network->layer_sizes[i];
+        int output_size = network->layer_sizes[i+1];
 
-    network->first_to_second_weight = calloc(first_hidden_num * second_hidden_num ,sizeof(double));
-    if(!network->first_to_second_weight) {
-        perror("Error allocating memory for first to second weight");
-        free(network->input_to_first_bias);
-        free(network->first_to_second_bias);
-        free(network->second_to_output_bias);
-        free(network->input_to_first_weight);
+        // Allocate each layer's neurons (starting from first hidden)
+        network->neurons[i] = calloc(output_size, sizeof(double));
+        if (!network->neurons[i]) {
+            perror("Error allocating neurons");
+            return -1;
+        }
 
-        return -1; // -1 for error
+        // Allocate weights connecting current layer to next
+        network->weights[i] = calloc(input_size * output_size, sizeof(double));
+        if (!network->weights[i]) {
+            perror("Error allocating weights");
+            return -1;
+        }
+
+        // Allocate biases for next layer
+        network->biases[i] = calloc(output_size, sizeof(double));
+        if (!network->biases[i]) {
+            perror("Error allocating biases");
+            return -1;
+        }
+
+        // Initialize weights
+        he_init(network->weights[i], output_size, input_size);
     }
-
-
-
-    network->second_to_output_weight = calloc(second_hidden_num * output_neurons_num  ,sizeof(double));
-    if(!network->second_to_output_weight) {
-        perror("Error allocating memory for second to final weight");
-        free(network->input_to_first_bias);
-        free(network->first_to_second_bias);
-        free(network->second_to_output_bias);
-        free(network->input_to_first_weight);
-        free(network->first_to_second_weight);
-        return -1; // -1 for error
-    }
-
-
-    //allocate space fot the neurons
-    //TODO : freeing memory if any one of the below callocs fail
-    network->first_hidden_neurons = calloc(first_hidden_num,sizeof(double));
-    network->second_hidden_neurons = calloc(second_hidden_num,sizeof(double));
-    network->output_neurons = calloc(output_neurons_num,sizeof(double));
-
-    he_init(network->input_to_first_weight,input_neurons_num,first_hidden_num);
-    he_init(network->first_to_second_weight,first_hidden_num,second_hidden_num);
-    he_init(network->second_to_output_weight,second_hidden_num,output_neurons_num);
 
     return 0;
 }
 
 //This is the final part of the network where we
-//have the probabilites in the network->output_neurons
+//have the probabilites in the output_neurons
 //we just have to pick the maximum one from them
 // and have the index of that as our class
 uint8_t network_predict(Network *network) {
-    uint8_t predicted = 0; //the predicted value will be a number from 0 to 10
-    double curr_max = network->output_neurons[0];
+    uint8_t predicted = 0; 
+    
+    // The last layer of neurons is our output layer
+    double *output_layer = network->neurons[network->num_layers - 2];
+    int output_size = network->layer_sizes[network->num_layers - 1];
+    
+    double curr_max = output_layer[0];
 
-    for (int i = 0; i < network->output_neurons_num; ++i) {
-        if (network->output_neurons[i] > curr_max){
-            curr_max = network->output_neurons[i];
+    for (int i = 0; i < output_size; ++i) {
+        if (output_layer[i] > curr_max){
+            curr_max = output_layer[i];
             predicted = i;
         }
     }
@@ -109,14 +88,15 @@ uint8_t network_predict(Network *network) {
 
 //freeing the memory when done with the program
 void network_free(Network *network) {
-    free(network->input_to_first_bias);
-    free(network->input_to_first_weight);
-    free(network->first_to_second_bias);
-    free(network->first_to_second_weight);
-    free(network->second_to_output_bias);
-    free(network->second_to_output_weight);
-    free(network->first_hidden_neurons);
-    free(network->second_hidden_neurons);
-    free(network->output_neurons);
-}
+    if (network->layer_sizes) free(network->layer_sizes);
 
+    for (int i = 0; i < network->num_layers - 1; i++) {
+        if (network->neurons[i]) free(network->neurons[i]);
+        if (network->weights[i]) free(network->weights[i]);
+        if (network->biases[i]) free(network->biases[i]);
+    }
+
+    if (network->neurons) free(network->neurons);
+    if (network->weights) free(network->weights);
+    if (network->biases) free(network->biases);
+}

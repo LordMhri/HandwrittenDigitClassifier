@@ -9,14 +9,14 @@ uint32_t reverse_endian(uint32_t value) {
            ((value & 0xFF000000) >> 24);
 }
 
-double **load_data_file(const char *filename) {
+double **load_image_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         perror("Failed to open file");
         return NULL;
     }
 
-    idx_header header;
+    idx_info header;
     if (fread(&header.magic_number, sizeof(uint32_t), 1, file) != 1) {
         perror("Failed to read magic number");
         fclose(file);
@@ -100,7 +100,7 @@ double **load_data_file(const char *filename) {
     return image_data;
 }
 
-uint8_t *load_text_file(const char *filename) {
+uint8_t *load_label_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         perror("Couldn't open file");

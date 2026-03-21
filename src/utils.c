@@ -1,6 +1,55 @@
 #include "../include/utils.h"
+#include "../include/network.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
+
+void save_network_to_json(struct Network *network, const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("Error opening file for saving network");
+        return;
+    }
+
+    fprintf(file, "{\n");
+    fprintf(file, "  \"num_layers\": %d,\n", network->num_layers);
+    
+    // Layer sizes
+    fprintf(file, "  \"layer_sizes\": [");
+    for (int i = 0; i < network->num_layers; i++) {
+        fprintf(file, "%d%s", network->layer_sizes[i], (i == network->num_layers - 1) ? "" : ", ");
+    }
+    fprintf(file, "],\n");
+
+    // Weights
+    fprintf(file, "  \"weights\": [\n");
+    for (int i = 0; i < network->num_layers - 1; i++) {
+        fprintf(file, "    [");
+        int size = network->layer_sizes[i] * network->layer_sizes[i+1];
+        for (int j = 0; j < size; j++) {
+            fprintf(file, "%.10f%s", network->weights[i][j], (j == size - 1) ? "" : ", ");
+        }
+        fprintf(file, "]%s\n", (i == network->num_layers - 2) ? "" : ",");
+    }
+    fprintf(file, "  ],\n");
+
+    // Biases
+    fprintf(file, "  \"biases\": [\n");
+    for (int i = 0; i < network->num_layers - 1; i++) {
+        fprintf(file, "    [");
+        int size = network->layer_sizes[i+1];
+        for (int j = 0; j < size; j++) {
+            fprintf(file, "%.10f%s", network->biases[i][j], (j == size - 1) ? "" : ", ");
+        }
+        fprintf(file, "]%s\n", (i == network->num_layers - 2) ? "" : ",");
+    }
+    fprintf(file, "  ]\n");
+
+    fprintf(file, "}\n");
+    fclose(file);
+    printf("Network saved to %s\n", filename);
+}
+
 
 double** normalize_image_data(uint8_t **inputs, int number_of_images) {
 

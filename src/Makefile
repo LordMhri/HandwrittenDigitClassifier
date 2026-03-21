@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -I./include -Wall -Wextra -std=c17 -g
 
 # Linker flags
-LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lopenblas -lm
+LDFLAGS = -lm
 
 # Source files
 SRCS = main.c data_loader.c network.c utils.c trainer.c
