@@ -74,7 +74,7 @@ int main() {
 
   // Save model to JSON for web usage
   printf("Exporting model to JSON...\n");
-  save_network_to_json(&network, "model_weights.json");
+  save_network_to_json(&network, "../web/model_weights.json");
 
   // Final Memory Cleanup
   printf("Cleaning up memory...\n");

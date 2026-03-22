@@ -9,7 +9,7 @@ class DigitClassifier {
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         this.isDrawing = false;
         this.weights = null;
-        
+
         this.initCanvas();
         this.initChart();
         this.loadModel();
@@ -41,8 +41,7 @@ class DigitClassifier {
 
     async loadModel() {
         try {
-            // Loading from the parent directory where C engine saves it
-            const response = await fetch('../src/model_weights.json');
+            const response = await fetch('model_weights.json');
             if (!response.ok) throw new Error('Could not load model_weights.json');
             this.weights = await response.json();
             console.log('Model loaded successfully:', this.weights.layer_sizes);
@@ -136,8 +135,8 @@ class DigitClassifier {
                 const idx = (y * srcW + x) * 4;
                 // Luminance-weighted grayscale
                 const gray = (srcData.data[idx] * 0.299 +
-                              srcData.data[idx + 1] * 0.587 +
-                              srcData.data[idx + 2] * 0.114) / 255.0;
+                    srcData.data[idx + 1] * 0.587 +
+                    srcData.data[idx + 2] * 0.114) / 255.0;
                 if (gray > 0.01) {
                     if (x < minX) minX = x;
                     if (x > maxX) maxX = x;
@@ -177,8 +176,8 @@ class DigitClassifier {
             for (let x = 0; x < scaledW; x++) {
                 const idx = (y * scaledW + x) * 4;
                 const gray = (tmpData.data[idx] * 0.299 +
-                              tmpData.data[idx + 1] * 0.587 +
-                              tmpData.data[idx + 2] * 0.114) / 255.0;
+                    tmpData.data[idx + 1] * 0.587 +
+                    tmpData.data[idx + 2] * 0.114) / 255.0;
                 cmX += x * gray;
                 cmY += y * gray;
                 cmTotal += gray;
@@ -208,8 +207,8 @@ class DigitClassifier {
         for (let i = 0; i < 784; i++) {
             const idx = i * 4;
             pixels[i] = (imageData.data[idx] * 0.299 +
-                         imageData.data[idx + 1] * 0.587 +
-                         imageData.data[idx + 2] * 0.114) / 255.0;
+                imageData.data[idx + 1] * 0.587 +
+                imageData.data[idx + 2] * 0.114) / 255.0;
         }
         return pixels;
     }
@@ -272,7 +271,7 @@ class DigitClassifier {
             const percent = (p * 100).toFixed(1);
             document.getElementById(`bar-${i}`).style.width = `${percent}%`;
             document.getElementById(`val-${i}`).textContent = `${percent}%`;
-            
+
             if (p > maxProb) {
                 maxProb = p;
                 maxIdx = i;
